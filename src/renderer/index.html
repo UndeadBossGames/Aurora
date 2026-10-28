@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; img-src 'self' file: data: blob: https:; media-src 'self' file: blob:; style-src 'self' 'unsafe-inline' file:; script-src 'self' 'unsafe-inline' file:; connect-src 'self' file: data: blob:" />
+  <title>Aurora</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <style id="user-css"></style>
+</head>
+<body>
+  <div id="app" class="app">
+    <!-- ===== Top bar ===== -->
+    <header class="topbar" id="topbar">
+      <div class="topbar-left no-drag">
+        <button class="icon-btn" id="btn-menu" title="Menu" data-icon="dots"></button>
+        <button class="icon-btn nav-arrow" id="btn-back" title="Go back" data-icon="chevronLeft"></button>
+        <button class="icon-btn nav-arrow" id="btn-fwd" title="Go forward" data-icon="chevronRight"></button>
+      </div>
+      <div class="topbar-center no-drag">
+        <button class="home-btn" id="btn-home" title="Home" data-icon="homeFilled"></button>
+        <div class="search-pill" id="search-pill">
+          <span class="search-icon" data-icon="search"></span>
+          <input id="search-input" type="text" placeholder="What do you want to play?" spellcheck="false" autocomplete="off" />
+          <span class="search-divider"></span>
+          <button class="browse-btn" id="btn-browse" title="Browse" data-icon="browse"></button>
+        </div>
+      </div>
+      <div class="topbar-right no-drag">
+        <button class="icon-btn small" id="btn-whatsnew" title="What's New" data-icon="bell"></button>
+        <button class="icon-btn small" id="btn-downloader-top" title="Video Downloader" data-icon="download"></button>
+        <button class="avatar-btn" id="btn-avatar" title="Profile"><span class="avatar" id="top-avatar"></span></button>
+      </div>
+      <div class="window-controls-space"></div>
+    </header>
+
+    <!-- ===== Left: Your Library ===== -->
+    <aside class="panel sidebar" id="sidebar">
+      <div class="lib-header">
+        <button class="lib-title" id="lib-title" title="Collapse Your Library">
+          <span class="lib-collapsed-icon" data-icon="library"></span>
+          <span class="lib-title-text">Your Library</span>
+        </button>
+        <div class="lib-header-actions">
+          <button class="pill-btn" id="btn-create"><span data-icon="plus"></span><span>Create</span></button>
+          <button class="icon-btn small" id="btn-lib-expand" title="Show more" data-icon="expand"></button>
+        </div>
+      </div>
+      <div class="lib-chips" id="lib-chips"></div>
+      <div class="lib-tools">
+        <div class="lib-search" id="lib-search">
+          <button class="icon-btn small" id="btn-lib-search" data-icon="search" title="Search in Your Library"></button>
+          <input id="lib-search-input" placeholder="Search in Your Library" />
+        </div>
+        <button class="lib-sort" id="btn-lib-sort"><span id="lib-sort-label">Recents</span><span data-icon="list"></span></button>
+      </div>
+      <div class="lib-list scroll" id="lib-list"></div>
+      <div class="sidebar-resizer" id="sidebar-resizer"></div>
+    </aside>
+
+    <!-- ===== Center: main view ===== -->
+    <main class="panel main" id="main">
+      <div class="main-scroll scroll" id="main-scroll">
+        <div class="main-sticky-header" id="main-sticky"></div>
+        <div class="view" id="view"></div>
+      </div>
+    </main>
+
+    <!-- ===== Right: Now playing / Queue ===== -->
+    <aside class="panel rightpanel" id="rightpanel">
+      <div class="rp-resizer" id="rp-resizer"></div>
+      <div class="rp-content scroll" id="rp-content"></div>
+    </aside>
+
+    <!-- ===== Bottom: player bar ===== -->
+    <footer class="playerbar" id="playerbar">
+      <div class="pb-left" id="pb-left"></div>
+      <div class="pb-center">
+        <div class="pb-controls">
+          <button class="icon-btn ctrl" id="btn-shuffle" title="Enable shuffle" data-icon="shuffle"></button>
+          <button class="icon-btn ctrl" id="btn-prev" title="Previous" data-icon="prev"></button>
+          <button class="play-btn" id="btn-play" title="Play" data-icon="play"></button>
+          <button class="icon-btn ctrl" id="btn-next" title="Next" data-icon="next"></button>
+          <button class="icon-btn ctrl" id="btn-repeat" title="Enable repeat" data-icon="repeat"></button>
+        </div>
+        <div class="pb-progress">
+          <span class="time" id="time-cur">0:00</span>
+          <div class="slider" id="seek"><div class="slider-track"><div class="slider-fill"></div></div><div class="slider-knob"></div></div>
+          <span class="time" id="time-total">0:00</span>
+        </div>
+      </div>
+      <div class="pb-right">
+        <button class="icon-btn small" id="btn-nowplaying" title="Now playing view" data-icon="nowPlaying"></button>
+        <button class="icon-btn small" id="btn-queue" title="Queue" data-icon="queue"></button>
+        <button class="icon-btn small" id="btn-device" title="Open file location" data-icon="folder"></button>
+        <button class="icon-btn small" id="btn-mute" title="Mute" data-icon="volHigh"></button>
+        <div class="slider volume" id="volume"><div class="slider-track"><div class="slider-fill"></div></div><div class="slider-knob"></div></div>
+        <button class="icon-btn small" id="btn-mini" title="Open video player" data-icon="miniPlayer"></button>
+        <button class="icon-btn small" id="btn-fullscreen" title="Full screen" data-icon="fullscreen"></button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- the single media element: plays audio and video -->
+  <div id="media-host" class="media-host"><video id="media" preload="auto" playsinline></video></div>
+
+  <div id="fullscreen-view" class="fullscreen-view hidden"></div>
+  <div id="overlay-root"></div>
+  <div id="toast" class="toast"></div>
+  <input type="file" id="hidden-file" hidden />
+
+  <script src="js/icons.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/views/home.js"></script>
+  <script src="js/views/search.js"></script>
+  <script src="js/views/collection.js"></script>
+  <script src="js/views/profile.js"></script>
+  <script src="js/views/downloader.js"></script>
+  <script src="js/views/settings.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
