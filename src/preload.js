@@ -37,6 +37,8 @@ contextBridge.exposeInMainWorld('native', {
     exists: invoke('library:exists'),
     saveCover: invoke('library:saveCover'),
     deleteFile: invoke('library:deleteFile'),
+    readBytes: invoke('library:readBytes'),
+    saveIncoming: invoke('library:saveIncoming'),
   },
   shell: { showItem: invoke('shell:showItem'), openPath: invoke('shell:openPath'), openExternal: invoke('shell:openExternal') },
   art: { lookup: invoke('art:lookup') },

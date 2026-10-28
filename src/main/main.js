@@ -194,6 +194,23 @@ function registerIpc() {
     fs.writeFileSync(out, Buffer.from(m[2], 'base64'));
     return out;
   });
+  // Friend sharing: read a song's bytes to send to a friend, and save one a friend sent us.
+  ipcMain.handle('library:readBytes', (_e, file) => {
+    const st = fs.statSync(file);
+    if (st.size > 80 * 1024 * 1024) throw new Error('This file is too large to send (max 80 MB).');
+    return new Uint8Array(fs.readFileSync(file));
+  });
+  ipcMain.handle('library:saveIncoming', (_e, { name, bytes, dir }) => {
+    const base = path.join(dir || app.getPath('music'), 'From friends');
+    fs.mkdirSync(base, { recursive: true });
+    const safe = String(name || 'song').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 150) || 'song';
+    const ext = path.extname(safe), stem = safe.slice(0, safe.length - ext.length);
+    if (!media.MEDIA_EXT.includes(ext.toLowerCase())) throw new Error('Not a music or video file.');
+    let out = path.join(base, safe), n = 1;
+    while (fs.existsSync(out)) out = path.join(base, `${stem} (${n++})${ext}`);
+    fs.writeFileSync(out, Buffer.from(bytes));
+    return media.readTrack(out, COVERS);
+  });
   ipcMain.handle('library:deleteFile', async (_e, file) => {
     try { await shell.trashItem(file); return true; } catch { return false; }
   });
