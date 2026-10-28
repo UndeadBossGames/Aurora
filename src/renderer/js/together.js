@@ -34,7 +34,7 @@ const ListenTogether = (() => {
 
   function profileBits() {
     const p = State.activeProfile() || { name: 'Listener', color: '#8b7bff' };
-    return { name: p.name, color: p.color, effect: p.effect || '' };
+    return { name: p.name, color: p.color, effect: p.effect || '', fc: typeof Friends !== 'undefined' ? Friends.myCode() : null };
   }
 
   function connect() {
@@ -87,7 +87,7 @@ const ListenTogether = (() => {
   async function hostTrackInfo(t) {
     let cover = t.coverUrl && /^https:/.test(t.coverUrl) ? t.coverUrl : null;
     try { const art = await native.art.lookup(t.title, t.artist); if (art && art.album) cover = art.album; } catch {}
-    return { key: trackKey(t), title: t.title, artist: t.artist, album: t.album || '', duration: t.duration || 0, url: t.url || null, source: t.source || null, cover, kind: t.kind };
+    return { id: t.id, key: trackKey(t), title: t.title, artist: t.artist, album: t.album || '', duration: t.duration || 0, url: t.url || null, source: t.source || null, cover, kind: t.kind };
   }
 
   let lastTrackInfo = { id: null, info: null };
@@ -140,17 +140,37 @@ const ListenTogether = (() => {
     if (cur && trackKey(cur) === st.track.key) return syncTick();
     const local = findLocal(st.track);
     if (local) return loadAndSync(local.id);
-    // We don't have it: fetch it (audio only, quick) and start as soon as it lands.
+    // We don't have it: get it and start as soon as it lands.
     if (S.pendingKey === st.track.key) return;
     S.pendingKey = st.track.key;
     S.sync = { status: 'fetching', drift: 0, note: `Getting "${st.track.title}"…`, progress: 0 };
     emit();
+    // Straight from the host (exact same file; over Wi-Fi when you're on the same network).
+    // iPhones always try this first; PCs do when the song has no YouTube/SoundCloud link.
+    const canHost = st.host && st.host.fc && st.track.id && typeof FriendShare !== 'undefined';
+    if (canHost && (native.platform === 'ios' || !st.track.url)) {
+      const key = st.track.key;
+      S.pendingJob = null;
+      FriendShare.request(st.host.fc, { id: st.track.id, title: st.track.title }, {
+        lt: S.code, quiet: true,
+        onProgress: (p, phase) => { if (S.pendingKey !== key) return; S.sync = { status: 'fetching', drift: 0, note: `Getting "${st.track.title}" from ${st.host.name || 'the host'}${phase === 'lan' ? ' over Wi-Fi' : ''}…`, progress: Math.round(p * 100) }; emit(); },
+        onDone: (track) => { if (S.pendingKey === key) loadAndSync(track.id); },
+        onError: (msg) => { if (S.pendingKey !== key) return; S.pendingKey = null; fetchElsewhere(st, msg); },
+      });
+      return;
+    }
+    fetchElsewhere(st);
+  }
+
+  // Download the song from YouTube/SoundCloud (on iPhone: through your linked PC)
+  async function fetchElsewhere(st, hostError) {
+    S.pendingKey = st.track.key;
     try {
       const url = st.track.url || `ytsearch1:${st.track.artist && st.track.artist !== 'Unknown artist' ? st.track.artist + ' - ' : ''}${st.track.title} audio`;
       const jobs = await native.dl.add({ url, format: 'audio-m4a', dir: State.settings().downloadDir, playlist: false, addToLibrary: true });
       S.pendingJob = jobs[0] && jobs[0].id;
     } catch (e) {
-      S.sync = { status: 'error', drift: 0, note: 'Couldn\'t get this song: ' + String(e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '') };
+      S.sync = { status: 'error', drift: 0, note: 'Couldn\'t get this song: ' + (hostError ? hostError + ' ' : '') + String(e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '') };
       S.pendingKey = null;
       emit();
     }
@@ -183,6 +203,15 @@ const ListenTogether = (() => {
     else m.playbackRate = 1;
     S.sync = { status: 'synced', drift, note: Math.abs(drift) < 0.15 ? 'In sync' : 'Syncing…' };
     emit();
+  }
+
+  // host: may this guest download the song that's playing? (FriendShare asks before sending)
+  function allowsFile(code, fromFc, trackId) {
+    if (S.role !== 'host' || !code || cleanCode(code) !== S.code || !fromFc) return false;
+    const n = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const member = [...S.members.values()].some((m) => m.fc && n(m.fc) === n(fromFc));
+    const cur = Player.current;
+    return member && !!cur && cur.id === trackId;
   }
 
   function resync() { S.following = true; applyHostState(); emit(); }
@@ -243,7 +272,7 @@ const ListenTogether = (() => {
   }
 
   return {
-    init, host, join, leave, say, resync, onChange, hostPosition, cleanCode,
+    init, host, join, leave, say, resync, onChange, hostPosition, cleanCode, allowsFile,
     get state() { return S; }, get inSession() { return !!S.role; }, get hostCode() { return S.role === 'host' ? S.code : null; }, me,
   };
 })();
