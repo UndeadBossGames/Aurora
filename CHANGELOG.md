@@ -2,6 +2,14 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.4.0 — 2026-10-28
+- **Listen Together**: host a session and share its code (like `LT-7KQ2M9`). Everyone who joins hears the same song at the same second; play, pause, seek and skip follow the host. If a guest doesn't have the song, Aurora downloads it for them automatically. Includes a member list, chat with emoji reactions, a Resync button, and a Join button on friends who are hosting
+- **Seamless in-app updates**: new versions download in the background inside Aurora. One click on "Restart to update" installs silently and reopens the app, with no installer wizard. You can turn automatic downloads off
+- **One menu**: the title-bar buttons (Store, Friends, Downloader, Updates, What's new) now live in a single menu under your avatar, with shortcut tiles, a profile switcher and alert dots
+- **Profile customization**: edit your bio (up to 300 characters), pronouns, a status with an emoji, a banner (8 gradients or your own picture), and show your favorite song, album and artist. Friends can open your profile card
+- **Profile effects**: Soft glow, Rainbow ring, Aurora ring, Heartbeat, Sparkles, On fire, Frost, Neon sign and Orbit
+- **Store**: 7 new themes (Lavender Haze, Crimson Night, Arctic, Cyber Lime, Coffee House, Retro Wave, Matrix), 5 new fonts, 7 player bar effects (glowing bar, rainbow progress, live EQ, spinning vinyl, album backdrop, pulsing play button, wave), and 4 one-click bundles. New Featured tab, NEW badges and a 15-second "Try" preview for themes
+
 ## v1.3.0 — 2026-10-28
 - **Discover**: a search panel at the top of Home and a full Discover page. Search YouTube or SoundCloud, preview inside Aurora, then download as video or audio in one click, with live progress on each result
 - **Create playlist** has been rebuilt: name, description, a cover photo and songs (with "All downloads" / "All favorites" shortcuts) in one window

@@ -26,7 +26,9 @@ Updating works the same way: run the newer installer. Your profiles, playlists a
 | **Library** | Favorites, playlists with custom covers, artist pages, search, sorting, a queue, shuffle and repeat. You can drag files or folders onto the window to import them. |
 | **Discover** | Search YouTube or SoundCloud from Home, preview a video inside Aurora, then download it as MP4 or MP3. |
 | **Friends** | Share your friend code, add friends, and see what they're listening to live. No account needed. |
-| **Aurora Store** | One-click themes, fonts, player styles and effects. You can export and import themes as files. |
+| **Listen Together** | Host a session, share the code, and everyone hears the same song at the same second, with chat and reactions. Missing songs are fetched automatically. |
+| **Your profile** | Bio, pronouns, status, banner, profile effects, and your favorite song, album and artist. |
+| **Aurora Store** | 15 themes, 10 fonts, profile effects, player bar effects and one-click bundles. You can export and import themes as files. |
 | **Discord Connection** | Shows what you're listening to on your Discord profile, with artwork, a progress bar and a link to the source. Turn it on from the avatar menu → Discord Connection, with the Discord desktop app open. |
 | **Make it yours** | Settings → Appearance lets you pick an accent colour and write custom CSS. For deeper changes, edit `user.css` / `user.js` in the custom folder, or change the source (see below). |
 
