@@ -97,6 +97,13 @@ const State = (() => {
     if (S.profiles.list.length <= 1) return false;
     S.profiles.list = S.profiles.list.filter((p) => p.id !== id);
     await native.store.remove('profile-' + id);
+    // songs that only belonged to the deleted profile become shared, so nothing disappears
+    for (const t of Object.values(S.tracks)) {
+      if (!Array.isArray(t.owners)) continue;
+      t.owners = t.owners.filter((o) => o !== id);
+      if (!t.owners.length) delete t.owners;
+    }
+    saveTracks();
     if (S.profiles.activeId === id) await switchProfile(S.profiles.list[0].id);
     saveProfiles();
     emit('profiles');
@@ -117,8 +124,35 @@ const State = (() => {
   }
 
   // ---------- tracks ----------
-  const track = (id) => S.tracks[id] || null;
-  const allTracks = () => Object.values(S.tracks);
+  // Songs belong to profiles. A track with no `owners` list is shared with every profile
+  // (that's how songs from before v1.5 behave). New songs belong to the profile that added them.
+  const visible = (t) => !!t && (!Array.isArray(t.owners) || t.owners.includes(S.profiles.activeId));
+  const track = (id) => (visible(S.tracks[id]) ? S.tracks[id] : null);
+  const allTracks = () => Object.values(S.tracks).filter(visible);
+  const anyTrack = (id) => S.tracks[id] || null;
+
+  // Copy or move songs to another profile. target = profile id, or '*' to share with everyone.
+  function transferTracks(ids, target, mode = 'copy') {
+    const me = S.profiles.activeId;
+    const everyone = S.profiles.list.map((p) => p.id);
+    let n = 0;
+    for (const id of ids) {
+      const t = S.tracks[id];
+      if (!t) continue;
+      if (target === '*') { if (Array.isArray(t.owners)) { delete t.owners; n++; } continue; }
+      let owners = Array.isArray(t.owners) ? [...t.owners] : [...everyone];
+      if (!owners.includes(target)) owners.push(target);
+      if (mode === 'move' && target !== me) owners = owners.filter((o) => o !== me);
+      owners = [...new Set(owners)].filter((o) => everyone.includes(o));
+      t.owners = owners;
+      n++;
+      if (mode === 'move' && target !== me) { delete S.p.liked[id]; }
+    }
+    saveTracks(); saveP();
+    emit('library');
+    return n;
+  }
+  const ownersOf = (t) => (Array.isArray(t.owners) ? t.owners : null);
 
   function addTracks(list) {
     let added = 0;
@@ -126,7 +160,10 @@ const State = (() => {
       if (!t || !t.id) continue;
       const prev = S.tracks[t.id];
       if (!prev) added++;
-      S.tracks[t.id] = prev ? { ...prev, ...t, addedAt: prev.addedAt, duration: t.duration || prev.duration } : t;
+      if (!prev && !Array.isArray(t.owners) && S.profiles.activeId) t.owners = [S.profiles.activeId];
+      // someone re-downloads a song another profile already owns: give it to them too
+      const owners = prev && Array.isArray(prev.owners) && S.profiles.activeId && !prev.owners.includes(S.profiles.activeId) ? [...prev.owners, S.profiles.activeId] : prev && prev.owners;
+      S.tracks[t.id] = prev ? { ...prev, ...t, addedAt: prev.addedAt, duration: t.duration || prev.duration, ...(owners ? { owners } : {}) } : t;
     }
     saveTracks();
     emit('library');
@@ -251,7 +288,7 @@ const State = (() => {
     if (key === 'liked') {
       return {
         key, type: 'Playlist', name: 'Favorites', cover: likedCover(), owner: me.name, editable: false,
-        items: sortByAdded(Object.entries(S.p.liked).filter(([id]) => S.tracks[id]).map(([id, at]) => ({ track: S.tracks[id], addedAt: at }))),
+        items: sortByAdded(Object.entries(S.p.liked).filter(([id]) => track(id)).map(([id, at]) => ({ track: track(id), addedAt: at }))),
       };
     }
     if (key === 'downloads') {
@@ -287,7 +324,7 @@ const State = (() => {
       return {
         key, type: 'Playlist', name: pl.name, description: pl.description, owner: me.name, editable: true, playlist: pl,
         cover: playlistCover(pl),
-        items: pl.items.filter((i) => S.tracks[i.id]).map((i) => ({ track: S.tracks[i.id], addedAt: i.addedAt })),
+        items: pl.items.filter((i) => track(i.id)).map((i) => ({ track: track(i.id), addedAt: i.addedAt })),
       };
     }
     return null;
@@ -297,7 +334,7 @@ const State = (() => {
     if (pl.cover) return pl.cover.startsWith('data:') ? pl.cover : native.fileUrl(pl.cover);
     const covers = [];
     for (const i of pl.items) {
-      const t = S.tracks[i.id];
+      const t = track(i.id);
       if (t && t.cover && !covers.includes(t.cover)) covers.push(t.cover);
       if (covers.length >= 4) break;
     }
@@ -323,7 +360,7 @@ const State = (() => {
   function libraryEntries() {
     const me = activeProfile() || { name: 'You' };
     const out = [];
-    const likedCount = Object.keys(S.p.liked).filter((id) => S.tracks[id]).length;
+    const likedCount = Object.keys(S.p.liked).filter((id) => track(id)).length;
     out.push({ key: 'liked', name: 'Favorites', sub: `Playlist • ${likedCount} song${likedCount === 1 ? '' : 's'}`, cover: likedCover(), kind: 'playlist', at: Math.max(lastPlayed('collection', 'liked'), 1) });
     const dl = allTracks().filter((t) => t.source !== 'local');
     if (dl.length) out.push({ key: 'downloads', name: 'Downloads', sub: `Playlist • ${dl.length} item${dl.length === 1 ? '' : 's'}`, cover: downloadsCover(), kind: 'download', at: lastPlayed('collection', 'downloads') || Math.max(...dl.map((t) => t.addedAt || 0)) });
@@ -340,7 +377,7 @@ const State = (() => {
   return {
     S, on, emit, init,
     profiles, activeProfile, createProfile, updateProfile, deleteProfile, switchProfile, PROFILE_COLORS,
-    track, allTracks, addTracks, updateTrack, removeTracks,
+    track, anyTrack, allTracks, addTracks, transferTracks, ownersOf, updateTrack, removeTracks,
     isLiked, toggleLike,
     playlists, playlist, createPlaylist, updatePlaylist, deletePlaylist, addToPlaylist, removeFromPlaylist, playlistCover,
     togglePin, isPinned, touchRecent, countPlay, lastPlayed,

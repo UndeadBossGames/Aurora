@@ -652,3 +652,21 @@ body {
 .pf-body { position: relative; z-index: 1; }
 .pf-id { padding-top: 70px; }
 .pf.mini .pf-id { padding-top: 48px; }
+
+/* ---------- v1.5: Transfer songs between profiles ---------- */
+.tr { display: grid; grid-template-columns: 260px 1fr; gap: 24px; min-height: 420px; }
+.tr-step { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14px; margin: 4px 0 12px; }
+.tr-step > span:first-child { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; background: linear-gradient(135deg, var(--accent, #8b7bff), #2dd4bf); color: #0b0b14; }
+.tr-targets { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; max-height: 260px; overflow: auto; }
+.tr-target { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1.5px solid transparent; color: inherit; text-align: left; cursor: pointer; transition: background .15s, border-color .15s; }
+.tr-target:hover { background: rgba(255,255,255,.08); }
+.tr-target.on { border-color: var(--accent, #8b7bff); background: rgba(139,123,255,.14); }
+.tr-all { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.1); }
+.tr-hint { font-size: 13px; line-height: 1.5; margin-top: 14px; }
+.tr-tools { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.tr-tools .find-input { flex: 1; min-width: 180px; }
+.tr-list { max-height: 360px; }
+.tr-who { font-size: 12px; color: var(--text-sub, #a7a7b8); white-space: nowrap; margin-left: auto; padding-left: 10px; }
+.tr-empty { text-align: center; padding: 18px 10px; color: var(--text-sub, #a7a7b8); }
+.tr-empty p { margin-top: 12px; line-height: 1.5; }
+@media (max-width: 760px) { .tr { grid-template-columns: 1fr; } .tr-targets { flex-direction: row; overflow-x: auto; } .tr-target { flex: none; } }

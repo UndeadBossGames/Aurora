@@ -114,6 +114,7 @@ Views.collection = {
           ${key === 'downloads' ? `<div class="seg"><button data-k="all" class="on">All</button><button data-k="audio">Music</button><button data-k="video">Videos</button></div>` : '<span></span>'}
           <div class="dl-tools-right">
             <div class="seg view"><button data-v="list" title="List" class="${dlView() === 'list' ? 'on' : ''}">${icon('list', 16)}</button><button data-v="grid" title="Grid" class="${dlView() === 'grid' ? 'on' : ''}">${icon('browse', 16)}</button></div>
+            <button class="btn-outline sm dl-transfer">${icon('transfer', 14)} Transfer</button>
             <button class="btn-outline sm dl-open-folder">${icon('folder', 14)} Open folder</button>
             <button class="btn-accent sm dl-more">${icon('download', 14)} Download more</button>
           </div>
@@ -121,6 +122,7 @@ Views.collection = {
       </div>`);
       $$('.seg:not(.view) button', tb).forEach((b) => b.onclick = () => { kindFilter = b.dataset.k; $$('.seg:not(.view) button', tb).forEach((x) => x.classList.toggle('on', x === b)); drawList(); });
       $$('.seg.view button', tb).forEach((b) => b.onclick = () => { State.setPref('dlView', { ...(pr.dlView || {}), [key]: b.dataset.v }); $$('.seg.view button', tb).forEach((x) => x.classList.toggle('on', x === b)); drawList(); });
+      $('.dl-transfer', tb).onclick = () => Views.transfer.open();
       $('.dl-open-folder', tb).onclick = () => native.shell.openPath(State.settings().downloadDir);
       $('.dl-more', tb).onclick = () => App.go('discover');
       root.appendChild(tb);

@@ -14,6 +14,11 @@ Views.profile = {
     const ed = html(`<button class="btn-accent">${icon('edit', 16)} Customize profile</button>`);
     ed.onclick = () => Views.profile.customize(p);
     $('.ab-left', bar).appendChild(ed);
+    if (isActive) {
+      const tr = html(`<button class="btn-outline">${icon('transfer', 16)} Transfer songs</button>`);
+      tr.onclick = () => Views.transfer.open();
+      $('.ab-left', bar).appendChild(tr);
+    }
     if (!isActive) {
       const sw = html(`<button class="btn-outline">Switch to ${esc(p.name)}</button>`);
       sw.onclick = () => App.switchProfile(p.id);
@@ -26,6 +31,7 @@ Views.profile = {
         { label: 'Customize profile', icon: 'edit', action: () => Views.profile.customize(p) },
         { label: 'Switch profile', icon: 'users', action: () => App.showProfilePicker() },
         { label: 'Add profile', icon: 'plus', action: () => Views.profile.createModal() },
+        { label: 'Transfer songs to another profile', icon: 'transfer', action: () => Views.transfer.open() },
         { divider: true },
         { label: 'Delete profile', icon: 'trash', danger: true, disabled: State.profiles().length <= 1, action: () => Views.profile.deleteProfile(p) },
       ], r.left, r.bottom + 4);

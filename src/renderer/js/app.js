@@ -457,7 +457,7 @@ const App = (() => {
   }
   async function rescanFolders() {
     for (const dir of State.settings().musicFolders) {
-      try { const tracks = await native.library.scan(dir); State.addTracks(tracks.filter((t) => !State.track(t.id))); fillDurations(tracks); } catch {}
+      try { const tracks = await native.library.scan(dir); State.addTracks(tracks.filter((t) => !State.anyTrack(t.id))); fillDurations(tracks); } catch {}
     }
   }
   // read durations for files that don't have one yet (metadata only, very fast)

@@ -121,6 +121,7 @@ const UI = (() => {
       { label: 'Show in folder', icon: 'folder', action: () => native.shell.showItem(track.path) },
       track.url ? { label: 'Open source page', icon: 'external', action: () => native.shell.openExternal(track.url) } : null,
       { label: 'Edit details', icon: 'edit', action: () => editTrackModal(track) },
+      State.profiles().length > 1 ? { label: 'Send to another profile…', icon: 'transfer', action: () => Views.transfer.open([track.id]) } : null,
       { divider: true },
       { label: 'Remove from library', icon: 'close', action: () => { State.removeTracks([track.id]); toast('Removed from library'); } },
       { label: 'Delete file', icon: 'trash', danger: true, action: async () => {
