@@ -18,17 +18,18 @@ Updating works the same way: run the newer installer. Your profiles, playlists a
 
 | | |
 |---|---|
-| **Familiar three-panel layout** | Your Library on the left, Home/playlists in the middle, Now Playing on the right, player bar at the bottom. The panels can be resized and collapsed. |
-| **Profiles** | Click your avatar (top right) → **Switch profile**, or open the **Profile** tab. Each profile has its own Liked Songs, playlists, history, accent colour and layout. You can turn on *Ask "Who's listening?" on startup*. |
+| **Three-panel layout** | Library on the left, Home/playlists in the middle, Now Playing on the right, player bar at the bottom. The panels can be resized and collapsed. |
+| **Profiles** | Click your avatar (top right) → **Switch profile**, or open the **Profile** tab. Each profile has its own Favorites, playlists, history, accent colour and layout. You can turn on *Ask "Who's listening?" on startup*. |
 | **Video Downloader** | Paste a link from YouTube, YouTube Music, SoundCloud, Vimeo, TikTok, Instagram, X, Twitch, Bandcamp and [1000+ other sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md). You can save it as MP4 (Best/1080p/720p), MP3 or M4A, and download whole playlists. Downloads go straight into your library. |
 | **Spotify links** | Spotify audio is DRM-protected, so Aurora reads the track names from a Spotify track, album or playlist link and downloads the best matching public upload from YouTube. |
 | **Plays everything** | MP3, M4A, FLAC, WAV, OGG, Opus, MP4, WebM and MKV. Videos play in the Now Playing panel, in full screen (F11) or in a pop-out picture-in-picture window. |
-| **Library** | Liked Songs, playlists with custom covers, artist pages, search, sorting, a queue, shuffle and repeat. You can drag files or folders onto the window to import them. |
+| **Library** | Favorites, playlists with custom covers, artist pages, search, sorting, a queue, shuffle and repeat. You can drag files or folders onto the window to import them. |
+| **Discord Connection** | Shows what you're listening to on your Discord profile, with artwork, a progress bar and a link to the source. Turn it on from the avatar menu → Discord Connection, with the Discord desktop app open. |
 | **Make it yours** | Settings → Appearance lets you pick an accent colour and write custom CSS. For deeper changes, edit `user.css` / `user.js` in the custom folder, or change the source (see below). |
 
-| Profile | Video Downloader | Playlist |
+| Profile | Discord Connection | Playlist |
 |---|---|---|
-| ![](docs/screenshots/profile.jpg) | ![](docs/screenshots/downloader.jpg) | ![](docs/screenshots/playlist.jpg) |
+| ![](docs/screenshots/profile.jpg) | ![](docs/screenshots/discord.jpg) | ![](docs/screenshots/playlist.jpg) |
 
 ### Keyboard shortcuts
 `Space` play/pause · `Ctrl+→/←` next/previous · `Ctrl+↑/↓` volume · `Ctrl+S` shuffle · `Ctrl+R` repeat · `Ctrl+K` search · `Ctrl+N` new playlist · `Ctrl+D` downloader · `Alt+←/→` back/forward · `F11` full screen

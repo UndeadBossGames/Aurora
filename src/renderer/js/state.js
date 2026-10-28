@@ -31,7 +31,7 @@ const State = (() => {
     recents: [],
     plays: {},
     pinned: ['liked'],
-    prefs: { accent: '#1ed760', showRightPanel: true, volume: 0.7, sidebarWidth: 420, rpWidth: 420, libFilter: null, libSort: 'recents', libView: 'list', homeFilter: 'all' },
+    prefs: { accent: '#8b7bff', themeV2: true, showRightPanel: true, volume: 0.7, sidebarWidth: 420, rpWidth: 420, libFilter: null, libSort: 'recents', libView: 'list', homeFilter: 'all' },
   });
 
   async function init() {
@@ -61,6 +61,8 @@ const State = (() => {
     const blank = blankProfileData();
     S.p = Object.assign(blank, data || {});
     S.p.prefs = Object.assign(blankProfileData().prefs, (data && data.prefs) || {});
+    // v1.2 look: move profiles still on the old default green to the new Aurora violet
+    if (!S.p.prefs.themeV2) { if (S.p.prefs.accent === '#1ed760') S.p.prefs.accent = '#8b7bff'; S.p.prefs.themeV2 = true; }
   }
 
   // ---------- profiles ----------
@@ -248,7 +250,7 @@ const State = (() => {
     const sortByAdded = (arr) => arr.sort((a, b) => b.addedAt - a.addedAt);
     if (key === 'liked') {
       return {
-        key, type: 'Playlist', name: 'Liked Songs', cover: likedCover(), owner: me.name, editable: false,
+        key, type: 'Playlist', name: 'Favorites', cover: likedCover(), owner: me.name, editable: false,
         items: sortByAdded(Object.entries(S.p.liked).filter(([id]) => S.tracks[id]).map(([id, at]) => ({ track: S.tracks[id], addedAt: at }))),
       };
     }
@@ -322,7 +324,7 @@ const State = (() => {
     const me = activeProfile() || { name: 'You' };
     const out = [];
     const likedCount = Object.keys(S.p.liked).filter((id) => S.tracks[id]).length;
-    out.push({ key: 'liked', name: 'Liked Songs', sub: `Playlist • ${likedCount} song${likedCount === 1 ? '' : 's'}`, cover: likedCover(), kind: 'playlist', at: Math.max(lastPlayed('collection', 'liked'), 1) });
+    out.push({ key: 'liked', name: 'Favorites', sub: `Playlist • ${likedCount} song${likedCount === 1 ? '' : 's'}`, cover: likedCover(), kind: 'playlist', at: Math.max(lastPlayed('collection', 'liked'), 1) });
     const dl = allTracks().filter((t) => t.source !== 'local');
     if (dl.length) out.push({ key: 'downloads', name: 'Downloads', sub: `Playlist • ${dl.length} item${dl.length === 1 ? '' : 's'}`, cover: downloadsCover(), kind: 'download', at: lastPlayed('collection', 'downloads') || Math.max(...dl.map((t) => t.addedAt || 0)) });
     const vids = allTracks().filter((t) => t.kind === 'video');

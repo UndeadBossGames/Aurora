@@ -2,6 +2,11 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.2.0 — 2026-10-28
+- **Discord Connection**: show what you're listening to on your Discord profile ("Listening to Aurora"), with song, artist, artwork, a live progress bar and an "Open on YouTube/SoundCloud" button. Open it from the avatar menu, Settings or Browse. It needs the Discord desktop app running on the same PC
+- New look: a deep-night palette, violet→teal "aurora" gradients, rounder shapes, a floating player dock, the Poppins display font, an Aurora logo in the title bar, and heart icons for favorites
+- "Liked Songs" is now **Favorites**, and "Your Library" is now **Library**
+
 ## v1.1.0 — 2026-10-28
 - New **Check for updates** button at the top right of the window (also in Menu → Help). It checks GitHub Releases, shows what's new, then downloads and runs the new installer. Your data is kept
 - Aurora checks quietly on start-up and turns the button green when an update is available

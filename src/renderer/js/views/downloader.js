@@ -48,7 +48,7 @@ Views.downloader = {
           <button class="btn-accent big" id="dl-go">Download</button>
         </div>
         <div class="dl-options">
-          <label class="dl-check"><input type="checkbox" id="dl-lib" class="toggle" ${s.dlAddToLibrary ? 'checked' : ''}/> <span>Add to Your Library</span></label>
+          <label class="dl-check"><input type="checkbox" id="dl-lib" class="toggle" ${s.dlAddToLibrary ? 'checked' : ''}/> <span>Add to Library</span></label>
           <label class="dl-check"><input type="checkbox" id="dl-pl" class="toggle" ${s.dlPlaylist ? 'checked' : ''}/> <span>Download whole playlist / album</span></label>
           <div class="dl-folder"><span data-icon="folder" data-icon-size="16"></span><span class="dl-folder-path" title="${esc(s.downloadDir)}"><bdi>${esc(s.downloadDir)}</bdi></span><button class="link-btn dl-change">Change</button><button class="link-btn dl-open">Open</button></div>
         </div>

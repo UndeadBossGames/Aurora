@@ -1,4 +1,4 @@
-// Playlist / Liked Songs / Downloads / Artist page + expanded "Your Library" grid
+// Playlist / Favorites / Downloads / Artist page + expanded "Library" grid
 Views.collection = {
   render(root, key) {
     const c = State.collection(key);
@@ -29,7 +29,7 @@ Views.collection = {
         <h1 class="coll-title ${c.name.length > 24 ? 'long' : ''} ${c.editable ? 'editable' : ''}">${esc(c.name)}</h1>
         ${c.description ? `<div class="coll-desc">${esc(c.description)}</div>` : ''}
         <div class="coll-info">
-          ${c.type !== 'Artist' ? `${UI.avatarHtml(c.owner === (me && me.name) ? me : { name: c.owner, color: '#1ed760' }, 24)}<b class="coll-owner">${esc(c.owner)}</b><span class="dot">•</span>` : ''}
+          ${c.type !== 'Artist' ? `${UI.avatarHtml(c.owner === (me && me.name) ? me : { name: c.owner, color: '#8b7bff' }, 24)}<b class="coll-owner">${esc(c.owner)}</b><span class="dot">•</span>` : ''}
           <span>${c.items.length} ${c.items.length === 1 ? 'item' : 'items'}${total ? `, ${c.items.length > 2 ? 'about ' : ''}${esc(fmtLong(total))}` : ''}</span>
         </div>
       </div>
@@ -99,7 +99,7 @@ Views.collection = {
       listHost.innerHTML = '';
       const shown = filterText ? items.filter((i) => `${i.track.title} ${i.track.artist} ${i.track.album}`.toLowerCase().includes(filterText)) : items;
       if (!c.items.length) {
-        if (key === 'liked') listHost.appendChild(UI.emptyState({ iconName: 'heart', title: 'Songs you like will appear here', text: 'Save songs by tapping the (+) icon.', actionLabel: 'Find songs', action: () => App.go('search', '') }));
+        if (key === 'liked') listHost.appendChild(UI.emptyState({ iconName: 'heart', title: 'Your favorite songs will appear here', text: 'Tap the heart on any song to save it here.', actionLabel: 'Find songs', action: () => App.go('search', '') }));
         else if (c.editable) listHost.appendChild(findForPlaylist(c.playlist));
         else listHost.appendChild(UI.emptyState({ iconName: 'download', title: 'Nothing here yet', text: 'Use the Video Downloader to save music and videos.', actionLabel: 'Open Video Downloader', action: () => App.go('downloader') }));
         return;
@@ -180,7 +180,7 @@ function findForPlaylist(pl, compact = false) {
 // Expanded library (grid of everything)
 Views.library = {
   render(root) {
-    root.appendChild(html(`<div class="lib-page-head"><h1>Your Library</h1><button class="pill-btn" data-icon="plus">Create</button></div>`));
+    root.appendChild(html(`<div class="lib-page-head"><h1>Library</h1><button class="pill-btn" data-icon="plus">Create</button></div>`));
     $('.lib-page-head .pill-btn', root).onclick = (e) => App.newPlaylist();
     const entries = State.libraryEntries().sort((a, b) => (b.pinned - a.pinned) || b.at - a.at);
     const cards = entries.map((e) => UI.card({ title: e.name, sub: esc(e.sub), cover: e.cover, round: e.round, key: e.key, playing: Player.playing && Player.isCurrentContext(e.key), onOpen: () => App.go('collection', e.key), onPlay: () => App.playCollection(e.key) }));

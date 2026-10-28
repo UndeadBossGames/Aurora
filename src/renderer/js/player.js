@@ -86,7 +86,7 @@ const Player = (() => {
       // nothing loaded: play liked songs or everything
       const liked = State.collection('liked').items.map((i) => i.track.id);
       const ids = liked.length ? liked : State.allTracks().map((t) => t.id);
-      if (ids.length) playContext(liked.length ? { key: 'liked', name: 'Liked Songs' } : { key: 'downloads', name: 'Your Library' }, ids, 0);
+      if (ids.length) playContext(liked.length ? { key: 'liked', name: 'Favorites' } : { key: 'downloads', name: 'Library' }, ids, 0);
       else UI.toast('Your library is empty. Download something or add local files first.');
       return;
     }

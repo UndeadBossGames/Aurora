@@ -5,6 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; img-src 'self' file: data: blob: https:; media-src 'self' file: blob:; style-src 'self' 'unsafe-inline' file:; script-src 'self' 'unsafe-inline' file:; connect-src 'self' file: data: blob:" />
   <title>Aurora</title>
   <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/theme-aurora.css" />
   <style id="user-css"></style>
 </head>
 <body>
@@ -15,12 +16,13 @@
         <button class="icon-btn" id="btn-menu" title="Menu" data-icon="dots"></button>
         <button class="icon-btn nav-arrow" id="btn-back" title="Go back" data-icon="chevronLeft"></button>
         <button class="icon-btn nav-arrow" id="btn-fwd" title="Go forward" data-icon="chevronRight"></button>
+        <button class="brand" id="btn-brand" title="Aurora home"><span class="brand-logo" data-icon="aurora" data-icon-size="26"></span><span class="brand-name">Aurora</span></button>
       </div>
       <div class="topbar-center no-drag">
         <button class="home-btn" id="btn-home" title="Home" data-icon="homeFilled"></button>
         <div class="search-pill" id="search-pill">
           <span class="search-icon" data-icon="search"></span>
-          <input id="search-input" type="text" placeholder="What do you want to play?" spellcheck="false" autocomplete="off" />
+          <input id="search-input" type="text" placeholder="Search songs, artists or paste a link" spellcheck="false" autocomplete="off" />
           <span class="search-divider"></span>
           <button class="browse-btn" id="btn-browse" title="Browse" data-icon="browse"></button>
         </div>
@@ -34,12 +36,12 @@
       <div class="window-controls-space"></div>
     </header>
 
-    <!-- ===== Left: Your Library ===== -->
+    <!-- ===== Left: Library ===== -->
     <aside class="panel sidebar" id="sidebar">
       <div class="lib-header">
-        <button class="lib-title" id="lib-title" title="Collapse Your Library">
+        <button class="lib-title" id="lib-title" title="Collapse Library">
           <span class="lib-collapsed-icon" data-icon="library"></span>
-          <span class="lib-title-text">Your Library</span>
+          <span class="lib-title-text">Library</span>
         </button>
         <div class="lib-header-actions">
           <button class="pill-btn" id="btn-create"><span data-icon="plus"></span><span>Create</span></button>
@@ -49,8 +51,8 @@
       <div class="lib-chips" id="lib-chips"></div>
       <div class="lib-tools">
         <div class="lib-search" id="lib-search">
-          <button class="icon-btn small" id="btn-lib-search" data-icon="search" title="Search in Your Library"></button>
-          <input id="lib-search-input" placeholder="Search in Your Library" />
+          <button class="icon-btn small" id="btn-lib-search" data-icon="search" title="Search in Library"></button>
+          <input id="lib-search-input" placeholder="Search in Library" />
         </div>
         <button class="lib-sort" id="btn-lib-sort"><span id="lib-sort-label">Recents</span><span data-icon="list"></span></button>
       </div>
@@ -121,6 +123,8 @@
   <script src="js/views/downloader.js"></script>
   <script src="js/views/settings.js"></script>
   <script src="js/updates.js"></script>
+  <script src="js/discord.js"></script>
+  <script src="js/views/discord.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

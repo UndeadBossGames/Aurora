@@ -114,7 +114,7 @@ const UI = (() => {
         ...pls.map((p) => ({ label: p.name, action: () => { const n = State.addToPlaylist(p.id, [track.id]); toast(n ? `Added to ${p.name}` : `Already in ${p.name}`); } })),
       ] },
       ctx.playlistId ? { label: 'Remove from this playlist', icon: 'trash', action: () => State.removeFromPlaylist(ctx.playlistId, track.id) } : null,
-      { label: liked ? 'Remove from your Liked Songs' : 'Save to your Liked Songs', iconHtml: liked ? `<span class="accent">${icon('checkCircle', 16)}</span>` : icon('plusCircle', 16), action: () => { const v = State.toggleLike(track.id); toast(v ? 'Added to Liked Songs' : 'Removed from Liked Songs'); } },
+      { label: liked ? 'Remove from your Favorites' : 'Save to your Favorites', iconHtml: liked ? `<span class="accent">${icon('heartFilled', 16)}</span>` : icon('heart', 16), action: () => { const v = State.toggleLike(track.id); toast(v ? 'Added to Favorites' : 'Removed from Favorites'); } },
       { label: 'Add to queue', icon: 'queue', action: () => { Player.addToQueue([track.id]); toast('Added to queue'); } },
       { divider: true },
       track.artist && track.artist !== 'Unknown artist' ? { label: 'Go to artist', icon: 'user', action: () => App.go('collection', 'artist:' + track.artist) } : null,
@@ -224,7 +224,7 @@ const UI = (() => {
         <div class="tl-title">${coverHtml(coverSrc(t), 'tl-cover')}<div class="tl-text"><div class="tl-name">${esc(t.title)}${t.kind === 'video' ? '<span class="badge">VIDEO</span>' : ''}</div><div class="tl-artist">${t.source && t.source !== 'local' ? `<span class="src-badge" title="${esc(t.source)}">${esc(t.source[0])}</span>` : ''}<a class="artist-link">${esc(t.artist)}</a></div></div></div>
         ${showAlbum ? `<div class="tl-album">${esc(t.album || '')}</div>` : ''}
         ${showAdded ? `<div class="tl-added">${esc(fmtDate(it.addedAt))}</div>` : ''}
-        <div class="tl-dur"><button class="tl-like ${State.isLiked(t.id) ? 'on' : ''}" title="Save to Liked Songs">${State.isLiked(t.id) ? icon('checkCircle', 16) : icon('plusCircle', 16)}</button><span>${t.duration ? fmtTime(t.duration) : '–:––'}</span><button class="tl-more" data-icon="dotsH" data-icon-size="16" title="More options"></button></div>
+        <div class="tl-dur"><button class="tl-like ${State.isLiked(t.id) ? 'on' : ''}" title="Save to Favorites">${State.isLiked(t.id) ? icon('heartFilled', 16) : icon('heart', 16)}</button><span>${t.duration ? fmtTime(t.duration) : '–:––'}</span><button class="tl-more" data-icon="dotsH" data-icon-size="16" title="More options"></button></div>
       </div>`);
       const play = () => {
         if (Player.P.current === t.id && Player.isCurrentContext(contextKey)) return Player.toggle();
@@ -236,7 +236,7 @@ const UI = (() => {
       row.addEventListener('keydown', (e) => { if (e.key === 'Enter') play(); });
       row.addEventListener('contextmenu', (e) => { e.preventDefault(); trackMenu(t, e.clientX, e.clientY, { playlistId }); });
       $('.tl-more', row).addEventListener('click', (e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); trackMenu(t, r.right, r.bottom, { playlistId }); });
-      $('.tl-like', row).addEventListener('click', (e) => { e.stopPropagation(); const v = State.toggleLike(t.id); toast(v ? 'Added to Liked Songs' : 'Removed from Liked Songs'); });
+      $('.tl-like', row).addEventListener('click', (e) => { e.stopPropagation(); const v = State.toggleLike(t.id); toast(v ? 'Added to Favorites' : 'Removed from Favorites'); });
       $('.artist-link', row).addEventListener('click', (e) => { e.stopPropagation(); if (t.artist && t.artist !== 'Unknown artist') App.go('collection', 'artist:' + t.artist); });
       body.appendChild(row);
     });

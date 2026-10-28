@@ -66,7 +66,7 @@ function genCover(seed, label = '', iconName = 'music') {
 }
 
 function likedCover() {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#450af5"/><stop offset="1" stop-color="#c4efd9"/></linearGradient></defs><rect width="24" height="24" fill="url(#g)"/><g transform="translate(7.5 7.5) scale(.375)" fill="#fff">${ICONS.heartFilled}</g></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d4dff"/><stop offset="1" stop-color="#2de2c9"/></linearGradient></defs><rect width="24" height="24" fill="url(#g)"/><g transform="translate(7.5 7.5) scale(.375)" fill="#fff">${ICONS.heartFilled}</g></svg>`;
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 

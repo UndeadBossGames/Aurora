@@ -86,11 +86,12 @@ function browse(root) {
   root.appendChild(html(`<h2 class="browse-title">Browse all</h2>`));
   const grid = html(`<div class="browse-grid"></div>`);
   const tiles = [
-    { name: 'Liked Songs', color: '#5038a0', key: 'liked', img: likedCover() },
+    { name: 'Favorites', color: '#5038a0', key: 'liked', img: likedCover() },
     { name: 'Downloads', color: '#006450', key: 'downloads', img: downloadsCover() },
     { name: 'Videos', color: '#8d0f5f', key: 'videos', img: videosCover() },
     { name: 'Local Files', color: '#477d95', key: 'local', img: genCover('local', '', 'folder') },
     { name: 'Video Downloader', color: '#e13300', view: 'downloader', img: genCover('dl-tile', '', 'download') },
+    { name: 'Discord Connection', color: '#5865f2', view: 'discord', img: genCover('discord-tile', '', 'discord') },
     { name: 'Your Profile', color: '#1e3264', view: 'profile', img: genCover('profile-tile', '', 'user') },
     { name: 'Settings', color: '#535353', view: 'settings', img: genCover('settings-tile', '', 'settings') },
   ];

@@ -15,7 +15,7 @@ Views.profile = {
       <div class="coll-meta">
         <div class="coll-type">Profile${isActive ? '' : ' (not active)'}</div>
         <h1 class="coll-title profile-name ${p.name.length > 14 ? 'long' : ''}">${esc(p.name)}</h1>
-        <div class="coll-info"><span>${pls.length} Playlist${pls.length === 1 ? '' : 's'}</span><span class="dot">•</span><span>${likedCount} Liked Song${likedCount === 1 ? '' : 's'}</span><span class="dot">•</span><span>${State.profiles().length} Profile${State.profiles().length === 1 ? '' : 's'} on this PC</span></div>
+        <div class="coll-info"><span>${pls.length} Playlist${pls.length === 1 ? '' : 's'}</span><span class="dot">•</span><span>${likedCount} Favorite${likedCount === 1 ? '' : 's'}</span><span class="dot">•</span><span>${State.profiles().length} Profile${State.profiles().length === 1 ? '' : 's'} on this PC</span></div>
       </div>
     </div>`);
     root.appendChild(head);
@@ -45,7 +45,7 @@ Views.profile = {
     // ---- Switch profile (always visible on this tab) ----
     const sw = html(`<section class="shelf profiles-shelf">
       <div class="shelf-head"><h2 class="shelf-title">Switch profile</h2><button class="shelf-more">Manage profiles</button></div>
-      <div class="shelf-subtitle">Each profile has its own Liked Songs, playlists, history and theme.</div>
+      <div class="shelf-subtitle">Each profile has its own Favorites, playlists, history and theme.</div>
       <div class="shelf-row profile-row"></div>
     </section>`);
     $('.shelf-more', sw).onclick = () => App.showProfilePicker({ manage: true });
@@ -151,7 +151,7 @@ Views.profile = {
 
   async deleteProfile(p, cb) {
     if (State.profiles().length <= 1) return;
-    if (!(await native.dialog.confirm({ message: `Delete profile "${p.name}"?`, detail: 'Its playlists, Liked Songs and history will be removed. Downloaded files stay on your computer.', ok: 'Delete' }))) return;
+    if (!(await native.dialog.confirm({ message: `Delete profile "${p.name}"?`, detail: 'Its playlists, Favorites and history will be removed. Downloaded files stay on your computer.', ok: 'Delete' }))) return;
     const wasActive = p.id === State.S.profiles.activeId;
     await State.deleteProfile(p.id);
     UI.toast('Profile deleted');

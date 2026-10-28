@@ -1,4 +1,4 @@
-// Aurora - application shell: routing, top bar, Your Library sidebar, right panel, player bar.
+// Aurora - application shell: routing, top bar, Library sidebar, right panel, player bar.
 // Views registry is created in util.js
 
 const App = (() => {
@@ -65,8 +65,8 @@ const App = (() => {
   // ================= ACCENT / THEME =================
   function applyTheme() {
     const pr = State.prefs();
-    document.documentElement.style.setProperty('--accent', pr.accent || '#1ed760');
-    document.documentElement.style.setProperty('--accent-hover', lighten(pr.accent || '#1ed760'));
+    document.documentElement.style.setProperty('--accent', pr.accent || '#8b7bff');
+    document.documentElement.style.setProperty('--accent-hover', lighten(pr.accent || '#8b7bff'));
     $('#user-css').textContent = (State.settings().customCss || '') + '\n' + (App._fileCss || '');
     $('#app').classList.toggle('no-right', !pr.showRightPanel);
     $('#app').style.setProperty('--sidebar-w', (pr.sidebarCollapsed ? 72 : pr.sidebarWidth || 420) + 'px');
@@ -84,6 +84,7 @@ const App = (() => {
     $('#btn-back').onclick = back;
     $('#btn-fwd').onclick = forward;
     $('#btn-home').onclick = () => go('home');
+    $('#btn-brand').onclick = () => go('home');
     $('#btn-browse').onclick = () => go('search', '');
     $('#btn-downloader-top').onclick = () => go('downloader');
     $('#btn-whatsnew').onclick = whatsNew;
@@ -119,6 +120,7 @@ const App = (() => {
         { label: 'Manage profiles', icon: 'edit', action: () => showProfilePicker({ manage: true }) },
       ] },
       { label: 'Video Downloader', icon: 'download', action: () => go('downloader') },
+      { label: 'Discord Connection', icon: 'discord', action: () => go('discord') },
       { label: 'Settings', icon: 'settings', action: () => go('settings') },
       { divider: true },
       { label: 'Log out', icon: 'logout', action: () => showProfilePicker() },
@@ -149,7 +151,7 @@ const App = (() => {
         { label: 'Settings', action: () => go('settings') },
       ] },
       { label: 'View', sub: [
-        { label: 'Your Library', checked: !State.prefs().sidebarCollapsed, action: toggleSidebar },
+        { label: 'Library', checked: !State.prefs().sidebarCollapsed, action: toggleSidebar },
         { label: 'Now Playing view', checked: State.prefs().showRightPanel, action: () => toggleRightPanel('nowplaying') },
         { label: 'Queue', action: () => toggleRightPanel('queue') },
         { divider: true },
@@ -353,10 +355,10 @@ const App = (() => {
       items.push(
         { label: 'Edit details', icon: 'edit', action: () => Views.collection.editModal(c.playlist) },
         { label: 'Delete', icon: 'trash', danger: true, action: async () => {
-          if (!(await native.dialog.confirm({ message: `Delete "${c.name}" from Your Library?`, ok: 'Delete' }))) return;
+          if (!(await native.dialog.confirm({ message: `Delete "${c.name}" from Library?`, ok: 'Delete' }))) return;
           State.deletePlaylist(c.playlist.id);
           if (current && current.param === key) go('home', null, { replace: true });
-          UI.toast('Removed from Your Library');
+          UI.toast('Removed from Library');
         } },
       );
     }
@@ -410,7 +412,7 @@ const App = (() => {
 
   function initDragDrop() {
     let depth = 0;
-    const hint = html('<div class="drop-hint"><div><span data-icon="import" data-icon-size="40"></span><b>Drop to add to Your Library</b></div></div>');
+    const hint = html('<div class="drop-hint"><div><span data-icon="import" data-icon-size="40"></span><b>Drop to add to Library</b></div></div>');
     document.body.appendChild(hint);
     window.addEventListener('dragenter', (e) => { if (e.dataTransfer.types.includes('Files')) { depth++; hint.classList.add('show'); } });
     window.addEventListener('dragleave', () => { depth = Math.max(0, depth - 1); if (!depth) hint.classList.remove('show'); });
@@ -477,7 +479,7 @@ const App = (() => {
     }
     // ----- Now playing -----
     if (!t) {
-      rp.innerHTML = `<div class="rp-head"><h3>Now playing</h3></div><div class="rp-empty"><span data-icon="music" data-icon-size="48"></span><b>Nothing playing yet</b><span>Pick something from Your Library or download a track to start listening.</span></div>`;
+      rp.innerHTML = `<div class="rp-head"><h3>Now playing</h3></div><div class="rp-empty"><span data-icon="music" data-icon-size="48"></span><b>Nothing playing yet</b><span>Pick something from Library or download a track to start listening.</span></div>`;
       hydrateIcons(rp);
       placeMedia();
       return;
@@ -495,7 +497,7 @@ const App = (() => {
       </div>
       <div class="np-info">
         <div class="np-text"><div class="np-title" title="${esc(t.title)}">${esc(t.title)}</div><a class="np-artist">${esc(t.artist)}</a></div>
-        <div class="np-actions"><button class="icon-btn small np-like ${liked ? 'on' : ''}" title="${liked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}">${liked ? icon('checkCircle', 24) : icon('plusCircle', 24)}</button></div>
+        <div class="np-actions"><button class="icon-btn small np-like ${liked ? 'on' : ''}" title="${liked ? 'Remove from Favorites' : 'Save to Favorites'}">${liked ? icon('heartFilled', 24) : icon('heart', 24)}</button></div>
       </div>
       <div class="np-card about">
         <div class="np-card-img" style="background-image:url('${esc(UI.coverSrc(t))}')"><span>About this ${t.kind === 'video' ? 'video' : 'track'}</span></div>
@@ -650,13 +652,13 @@ const App = (() => {
     const el = html(`<div class="pb-track">
       <button class="pb-cover" title="Now playing view">${UI.coverHtml(UI.coverSrc(t), 'pb-cover-img')}</button>
       <div class="pb-text"><a class="pb-title" title="${esc(t.title)}">${esc(t.title)}</a><a class="pb-artist">${esc(t.artist)}</a></div>
-      <button class="icon-btn small pb-like ${liked ? 'on' : ''}" title="${liked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}">${liked ? icon('checkCircle', 16) : icon('plusCircle', 16)}</button>
+      <button class="icon-btn small pb-like ${liked ? 'on' : ''}" title="${liked ? 'Remove from Favorites' : 'Save to Favorites'}">${liked ? icon('heartFilled', 16) : icon('heart', 16)}</button>
     </div>`);
     left.appendChild(el);
     $('.pb-cover', el).onclick = () => toggleRightPanel('nowplaying');
     $('.pb-title', el).onclick = () => Player.P.context && go('collection', Player.P.context.key);
     $('.pb-artist', el).onclick = () => t.artist !== 'Unknown artist' && go('collection', 'artist:' + t.artist);
-    $('.pb-like', el).onclick = () => { const v = State.toggleLike(t.id); UI.toast(v ? 'Added to Liked Songs' : 'Removed from Liked Songs'); };
+    $('.pb-like', el).onclick = () => { const v = State.toggleLike(t.id); UI.toast(v ? 'Added to Favorites' : 'Removed from Favorites'); };
     el.oncontextmenu = (e) => { e.preventDefault(); UI.trackMenu(t, e.clientX, e.clientY); };
   }
 
@@ -744,12 +746,12 @@ const App = (() => {
     const grid = $('.picker-grid', el);
     if (firstRun) {
       const form = html(`<div class="picker-form">
-        <div class="picker-avatar-edit" title="Choose photo"><span class="pa-preview">${UI.avatarHtml({ name: 'L', color: '#1ed760' }, 120)}</span><span class="pa-edit">${icon('edit', 28)}<span>Choose photo</span></span></div>
+        <div class="picker-avatar-edit" title="Choose photo"><span class="pa-preview">${UI.avatarHtml({ name: 'L', color: '#8b7bff' }, 120)}</span><span class="pa-edit">${icon('edit', 28)}<span>Choose photo</span></span></div>
         <input class="input big" placeholder="Your name" maxlength="40" value="" />
         <button class="btn-accent big">Start listening</button>
       </div>`);
       let avatar = null;
-      const color = '#1ed760';
+      const color = '#8b7bff';
       const input = $('input', form);
       const preview = () => { $('.pa-preview', form).innerHTML = UI.avatarHtml({ name: input.value || 'L', color, avatar }, 120); };
       input.addEventListener('input', preview);
@@ -810,7 +812,7 @@ const App = (() => {
     UI.modal({
       title: "What's New",
       body: `<div class="whatsnew">
-        <div class="wn-item"><span class="wn-dot"></span><div><b>Aurora ${esc(State.S.info.version)}</b><p>Profiles you can switch any time, the Video Downloader (YouTube, SoundCloud, Spotify links and 1000+ sites), playlists, Liked Songs, video playback, full screen mode and custom themes.</p></div></div>
+        <div class="wn-item"><span class="wn-dot"></span><div><b>Aurora ${esc(State.S.info.version)}</b><p>Profiles you can switch any time, the Video Downloader (YouTube, SoundCloud, Spotify links and 1000+ sites), playlists, Favorites, video playback, full screen mode and custom themes.</p></div></div>
         <div class="wn-item"><span class="wn-dot"></span><div><b>Make it yours</b><p>Settings → Appearance lets you change the accent colour and add custom CSS. Power users can edit <code>user.css</code> and <code>user.js</code> in the custom folder.</p></div></div>
       </div>`,
       actions: [{ label: 'Got it', primary: true }],
@@ -884,6 +886,7 @@ const App = (() => {
     initDragDrop();
     initDownloads();
     Updates.init();
+    DiscordConn.init();
     State.on('library', () => { renderLibrary(); rerender(); });
     State.on('likes', () => { renderNowPlayingBar(); renderRightPanel(); });
     State.on('profiles', renderAvatar);

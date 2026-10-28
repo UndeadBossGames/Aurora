@@ -6,7 +6,7 @@ Views.settings = {
     const s = State.settings();
     const me = State.activeProfile();
     const info = State.S.info;
-    const ACCENTS = ['#1ed760', '#2de2c9', '#509bf5', '#9b6bff', '#f037a5', '#ff5f5f', '#f59b23', '#ffd166', '#ffffff'];
+    const ACCENTS = ['#8b7bff', '#2de2c9', '#1ed760', '#509bf5', '#9b6bff', '#f037a5', '#ff5f5f', '#f59b23', '#ffd166', '#ffffff'];
 
     const el = html(`<div class="settings">
       <h1 class="settings-title">Settings</h1>
@@ -14,6 +14,10 @@ Views.settings = {
       <section><h2>Profile</h2>
         <div class="set-row"><div><b>${UI.avatarHtml(me, 28)} ${esc(me.name)}</b><span>Each profile keeps its own library, likes, history and appearance.</span></div><div class="set-actions"><button class="btn-outline sm s-edit">Edit profile</button><button class="btn-outline sm s-switch">Switch profile</button></div></div>
         <div class="set-row"><div><b>Ask "Who's listening?" on startup</b><span>Show the profile picker every time Aurora opens.</span></div><input type="checkbox" class="toggle s-ask" ${State.S.profiles.askOnStartup ? 'checked' : ''}/></div>
+      </section>
+
+      <section><h2>Discord Connection</h2>
+        <div class="set-row"><div><b>${icon('discord', 18)} Show what you're listening to on Discord</b><span>Needs the Discord desktop app running on this PC.</span></div><div class="set-actions"><input type="checkbox" class="toggle s-dc" ${State.settings().discordEnabled ? 'checked' : ''}/><button class="btn-outline sm s-dc-open">Options</button></div></div>
       </section>
 
       <section><h2>Appearance</h2>
@@ -37,7 +41,7 @@ Views.settings = {
       <section><h2>Downloads</h2>
         <div class="set-row"><div><b>Download location</b><span class="s-dldir">${esc(s.downloadDir)}</span></div><div class="set-actions"><button class="btn-outline sm s-dlchange">Change</button><button class="btn-outline sm s-dlopen">Open</button></div></div>
         <div class="set-row"><div><b>Default format</b></div><div class="dl-select"><select class="s-fmt">${[['video-best', 'Video · Best (MP4)'], ['video-1080', 'Video · 1080p'], ['video-720', 'Video · 720p'], ['audio-mp3', 'Audio · MP3'], ['audio-m4a', 'Audio · M4A']].map(([k, l]) => `<option value="${k}" ${s.dlFormat === k ? 'selected' : ''}>${l}</option>`).join('')}</select><span data-icon="chevronDown" data-icon-size="16"></span></div></div>
-        <div class="set-row"><div><b>Add downloads to Your Library</b></div><input type="checkbox" class="toggle s-dllib" ${s.dlAddToLibrary ? 'checked' : ''}/></div>
+        <div class="set-row"><div><b>Add downloads to Library</b></div><input type="checkbox" class="toggle s-dllib" ${s.dlAddToLibrary ? 'checked' : ''}/></div>
       </section>
 
       <section><h2>Advanced</h2>
@@ -54,6 +58,8 @@ Views.settings = {
     root.appendChild(el);
     const q = (sel) => $(sel, el);
 
+    q('.s-dc').onchange = (e) => DiscordConn.setEnabled(e.target.checked);
+    q('.s-dc-open').onclick = () => App.go('discord');
     q('.s-edit').onclick = () => Views.profile.editModal(me, () => App.render());
     q('.s-switch').onclick = () => App.showProfilePicker();
     q('.s-ask').onchange = (e) => { State.S.profiles.askOnStartup = e.target.checked; native.store.write('profiles', State.S.profiles); };
@@ -87,8 +93,8 @@ Views.settings = {
     q('.s-dev').onclick = () => native.app.devtools();
     q('.s-data').onclick = () => native.shell.openPath(info.userData);
     q('.s-reset').onclick = () => {
-      Object.assign(State.prefs(), { accent: '#1ed760', showRightPanel: true, sidebarWidth: 420, rpWidth: 420, sidebarCollapsed: false, heroHidden: false });
-      State.setPref('accent', '#1ed760');
+      Object.assign(State.prefs(), { accent: '#8b7bff', showRightPanel: true, sidebarWidth: 420, rpWidth: 420, sidebarCollapsed: false, heroHidden: false });
+      State.setPref('accent', '#8b7bff');
       App.applyTheme(); App.renderRightPanel(); App.render();
     };
     q('.s-gh').onclick = () => native.shell.openExternal(App.REPO);
