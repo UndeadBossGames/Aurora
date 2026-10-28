@@ -6,6 +6,8 @@ const Friends = (() => {
   // only one that worked reliably in testing (Oct 2026).
   const BROKERS = ['wss://broker.emqx.io:8084/mqtt'];
   const NS = 'aurora-player/v1/u/';
+  const DM = 'aurora-player/v1/dm/'; // private inbox per friend code (library sharing)
+  const dmListeners = [];
   let client = null;
   let state = 'off';
   const presence = new Map(); // code -> payload
@@ -27,6 +29,7 @@ const Friends = (() => {
   const normCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^AUR/, '');
   const prettyCode = (c) => { const n = normCode(c); return n.length === 8 ? `AUR-${n.slice(0, 4)}-${n.slice(4)}` : null; };
   const topic = (code) => NS + normCode(code).toLowerCase();
+  const dmTopic = (code) => DM + normCode(code).toLowerCase();
 
   function myCode() {
     if (!pr().friendCode) State.setPref('friendCode', genCode());
@@ -90,11 +93,16 @@ const Friends = (() => {
     const code = myCode();
     const name = (State.activeProfile() || {}).name || 'Aurora user';
     client = new MiniMqtt({
-      urls: BROKERS,
+      urls: window.AURORA_BROKER ? [window.AURORA_BROKER] : BROKERS,
       clientId: 'aurora-' + normCode(code).toLowerCase() + '-' + Math.random().toString(36).slice(2, 7),
       will: sharing() ? { topic: topic(code), payload: JSON.stringify({ v: 1, name, status: 'offline', ts: Date.now() }), retain: true } : null,
       onState: (s) => { state = s; if (s === 'connected') { lastPayload = ''; publish(true); } emit(); },
       onMessage: (t, payload) => {
+        if (t.startsWith(DM)) {
+          let m; try { m = JSON.parse(payload); } catch { return; }
+          if (m && m.from) dmListeners.forEach((f) => { try { f(m); } catch (e) { console.warn(e); } });
+          return;
+        }
         const code = t.slice(NS.length).toUpperCase();
         if (!payload) { presence.delete(code); emit(); return; }
         try { presence.set(code, JSON.parse(payload)); } catch {}
@@ -102,6 +110,7 @@ const Friends = (() => {
       },
     });
     for (const f of friends()) client.subscribe(topic(f.code));
+    client.subscribe(dmTopic(code));
     client.connect();
     heartbeat = setInterval(() => publish(true), 60000);
   }
@@ -159,6 +168,16 @@ const Friends = (() => {
     return friends().filter((f) => statusOf(f.code).status === 'listening').length;
   }
 
+  // ---- direct messages between friends (used by FriendShare) ----
+  const isFriend = (code) => friends().some((f) => normCode(f.code) === normCode(code));
+  const friendByCode = (code) => friends().find((f) => normCode(f.code) === normCode(code)) || null;
+  const onDM = (fn) => { dmListeners.push(fn); return () => dmListeners.splice(dmListeners.indexOf(fn), 1); };
+  function send(code, msg) {
+    if (!client) return false;
+    client.publish(dmTopic(code), JSON.stringify({ ...msg, from: myCode(), fromName: (State.activeProfile() || {}).name || 'Aurora user' }));
+    return client.connected;
+  }
+
   function init() {
     myCode();
     start();
@@ -172,5 +191,5 @@ const Friends = (() => {
     setInterval(emit, 30000); // refresh "x min ago" labels and offline detection
   }
 
-  return { init, onChange, myCode, friends, addFriend, removeFriend, renameFriend, statusOf, sharing, setSharing, listeningCount, prettyCode, get state() { return state; }, restart: start };
+  return { init, onChange, myCode, isFriend, friendByCode, onDM, send, normCode, friends, addFriend, removeFriend, renameFriend, statusOf, sharing, setSharing, listeningCount, prettyCode, get state() { return state; }, restart: start };
 })();
