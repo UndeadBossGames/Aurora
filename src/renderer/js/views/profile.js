@@ -111,7 +111,7 @@ Views.profile = {
     const nameIn = $('[name=name]', body);
     const redraw = () => { $('.ed-av', body).innerHTML = UI.avatarHtml({ name: nameIn.value || '?', color, avatar }, 180); $('.remove-photo', body).hidden = !avatar; };
     nameIn.addEventListener('input', redraw);
-    $('.ed-cover', body).onclick = async () => { const a = await native.dialog.image(); if (a) { avatar = a; redraw(); } };
+    $('.ed-cover', body).onclick = async () => { const a = await pickPhoto(); if (a) { avatar = a; redraw(); } };
     $('.remove-photo', body).onclick = () => { avatar = null; redraw(); };
     $$('.swatch', body).forEach((s) => s.onclick = () => { color = s.dataset.c; $$('.swatch', body).forEach((x) => x.classList.toggle('on', x === s)); redraw(); });
     return { body, get: () => ({ name: nameIn.value.trim(), avatar, color }) };

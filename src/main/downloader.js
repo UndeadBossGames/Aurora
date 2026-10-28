@@ -62,6 +62,42 @@ class Downloader extends EventEmitter {
     return { ytdlp: version, ffmpeg: this.hasFfmpeg(), ffmpegInstalling: !!this.ffmpegInstalling, binDir: this.binDir, formats: FORMATS };
   }
 
+  // ---------- online search (Discover) ----------
+  // source: 'youtube' | 'soundcloud'. Returns lightweight results without downloading anything.
+  async search(query, source = 'youtube', limit = 18) {
+    query = String(query || '').trim();
+    if (!query) return [];
+    if (!fs.existsSync(this.ytdlp)) await this.updateYtdlp();
+    const sc = source === 'soundcloud';
+    const n = Math.max(1, Math.min(sc ? 12 : 30, limit));
+    const args = ['-J', '--no-warnings', '--ignore-errors', ...(sc ? ['--skip-download'] : ['--flat-playlist']), `${sc ? 'scsearch' : 'ytsearch'}${n}:${query}`];
+    const out = await new Promise((resolve, reject) => {
+      execFile(this.ytdlp, args, { windowsHide: true, maxBuffer: 64 * 1024 * 1024, timeout: 90000, env: { ...process.env, PYTHONUTF8: '1' } }, (err, stdout, stderr) => {
+        if (err && !stdout) return reject(new Error((String(stderr).match(/ERROR:.*$/m) || [err.message])[0].replace(/^ERROR:\s*/, '')));
+        resolve(stdout);
+      });
+    });
+    let data;
+    try { data = JSON.parse(out); } catch { return []; }
+    return (data.entries || []).filter(Boolean).map((e) => {
+      const id = e.id;
+      const url = e.webpage_url || e.url || (sc ? null : `https://www.youtube.com/watch?v=${id}`);
+      const thumbs = (e.thumbnails || []).filter((t) => t && t.url);
+      const thumb = sc
+        ? (e.thumbnail || (thumbs.length ? thumbs[thumbs.length - 1].url : null))
+        : `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+      return {
+        id, url, source: sc ? 'SoundCloud' : 'YouTube',
+        title: e.title || e.track || 'Untitled',
+        channel: e.channel || e.uploader || e.artist || '',
+        duration: Number(e.duration) || 0,
+        views: Number(e.view_count) || 0,
+        thumbnail: thumb,
+        live: e.live_status === 'is_live',
+      };
+    }).filter((r) => r.url && !r.live);
+  }
+
   // ---------- tool management ----------
   async downloadFile(url, dest, onProgress) {
     const res = await net.fetch(url, { headers: { 'User-Agent': UA } });
@@ -377,6 +413,7 @@ class Downloader extends EventEmitter {
       kind: isVideo ? 'video' : 'audio',
       source: job.source || info.extractor_key || 'web',
       url: info.webpage_url || job.displayUrl,
+      size: (() => { try { return fs.statSync(file).size; } catch { return 0; } })(),
       cover,
       coverUrl: thumbUrl && /^https:\/\//.test(thumbUrl) ? thumbUrl : null,
       addedAt: Date.now(),

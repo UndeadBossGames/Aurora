@@ -120,3 +120,30 @@ function debounce(fn, ms) {
 }
 
 function isUrl(s) { return /^https?:\/\/\S+$/i.test(String(s).trim()); }
+
+// Ask for a photo and return a square, resized JPEG data URL (works for JPG, PNG, WebP, GIF, AVIF, BMP).
+async function pickPhoto(size = 640) {
+  let raw;
+  try { raw = await native.dialog.image(); } catch (e) { UI.toast(String(e.message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')); return null; }
+  if (!raw) return null;
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('decode')); i.src = raw; });
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    const c = document.createElement('canvas');
+    c.width = c.height = Math.min(size, side);
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.9);
+  } catch {
+    UI.toast("Couldn't read that image. Try a JPG or PNG.");
+    return null;
+  }
+}
+
+function fmtBytes(n) {
+  if (!n) return '0 B';
+  const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.min(u.length - 1, Math.floor(Math.log(n) / Math.log(1024)));
+  return (n / Math.pow(1024, i)).toFixed(i >= 2 ? 1 : 0) + ' ' + u[i];
+}

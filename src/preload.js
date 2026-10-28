@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('native', {
     deleteFile: invoke('library:deleteFile'),
   },
   shell: { showItem: invoke('shell:showItem'), openPath: invoke('shell:openPath'), openExternal: invoke('shell:openExternal') },
+  art: { lookup: invoke('art:lookup') },
   discord: {
     configure: invoke('discord:configure'),
     status: invoke('discord:status'),
@@ -52,6 +53,7 @@ contextBridge.exposeInMainWorld('native', {
   },
   dl: {
     add: invoke('dl:add'),
+    search: invoke('dl:search'),
     list: invoke('dl:list'),
     cancel: invoke('dl:cancel'),
     retry: invoke('dl:retry'),

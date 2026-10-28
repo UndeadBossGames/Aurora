@@ -1,5 +1,5 @@
 // Aurora - main (Node/Electron) process.
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, Menu, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Store = require('./store');
@@ -111,6 +111,10 @@ app.whenReady().then(() => {
   downloader.on('cleared', () => send('dl:cleared'));
   downloader.on('tools', (t) => send('dl:tools', t));
   registerIpc();
+  session.defaultSession.webRequest.onBeforeSendHeaders(
+    { urls: ['https://www.youtube-nocookie.com/*', 'https://www.youtube.com/embed/*', 'https://w.soundcloud.com/*'] },
+    (details, cb) => { details.requestHeaders.Referer = 'https://aurora-player.app/'; cb({ requestHeaders: details.requestHeaders }); },
+  );
   createWindow();
 });
 
@@ -162,14 +166,16 @@ function registerIpc() {
     return r.canceled ? [] : r.filePaths;
   });
   ipcMain.handle('dialog:image', async () => {
-    const r = await dialog.showOpenDialog(win, { title: 'Choose a photo', properties: ['openFile'], filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif'] }] });
+    // Return the raw file as a data URL; the UI crops/resizes it with Chromium, which can decode
+    // WebP, GIF, AVIF, BMP, etc. (nativeImage on Windows only reads PNG/JPEG, which made some photos silently fail).
+    const r = await dialog.showOpenDialog(win, { title: 'Choose a photo', properties: ['openFile'], filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'avif', 'jfif'] }] });
     if (r.canceled) return null;
-    const img = nativeImage.createFromPath(r.filePaths[0]);
-    if (img.isEmpty()) return null;
-    const s = img.getSize();
-    const side = Math.min(s.width, s.height);
-    const crop = img.crop({ x: Math.floor((s.width - side) / 2), y: Math.floor((s.height - side) / 2), width: side, height: side });
-    return crop.resize({ width: 400, height: 400, quality: 'best' }).toDataURL();
+    const f = r.filePaths[0];
+    const stat = fs.statSync(f);
+    if (stat.size > 25 * 1024 * 1024) throw new Error('That image is too large (max 25 MB).');
+    const ext = path.extname(f).slice(1).toLowerCase();
+    const mime = { jpg: 'image/jpeg', jpeg: 'image/jpeg', jfif: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', bmp: 'image/bmp', avif: 'image/avif' }[ext] || 'image/png';
+    return `data:${mime};base64,${fs.readFileSync(f).toString('base64')}`;
   });
   ipcMain.handle('dialog:confirm', async (_e, { message, detail, ok = 'OK' }) => {
     const r = await dialog.showMessageBox(win, { type: 'question', buttons: [ok, 'Cancel'], defaultId: 0, cancelId: 1, message, detail });
@@ -182,7 +188,7 @@ function registerIpc() {
     files.filter((f) => media.MEDIA_EXT.includes(path.extname(f).toLowerCase()) && fs.existsSync(f)).map((f) => media.readTrack(f, COVERS)));
   ipcMain.handle('library:exists', (_e, files) => files.map((f) => fs.existsSync(f)));
   ipcMain.handle('library:saveCover', (_e, id, dataUrl) => {
-    const m = String(dataUrl).match(/^data:image\/(png|jpe?g|webp);base64,(.+)$/);
+    const m = String(dataUrl).match(/^data:image\/(png|jpe?g|webp|gif);base64,(.+)$/);
     if (!m) return null;
     const out = path.join(COVERS, `${id}-${Date.now()}.${m[1] === 'jpeg' ? 'jpg' : m[1]}`);
     fs.writeFileSync(out, Buffer.from(m[2], 'base64'));
@@ -199,6 +205,7 @@ function registerIpc() {
 
   // downloader
   ipcMain.handle('dl:add', (_e, opts) => downloader.add(opts));
+  ipcMain.handle('dl:search', (_e, q, source, limit) => downloader.search(q, source, limit));
   ipcMain.handle('dl:list', () => downloader.list());
   ipcMain.handle('dl:cancel', (_e, id) => downloader.cancel(id));
   ipcMain.handle('dl:retry', (_e, id) => downloader.retry(id));
@@ -211,6 +218,9 @@ function registerIpc() {
   // updates
   ipcMain.handle('update:check', () => updater.check());
   ipcMain.handle('update:install', () => updater.downloadAndInstall());
+
+  // Album / artist artwork lookup (shared by Discord and Friends)
+  ipcMain.handle('art:lookup', (_e, title, artist) => (artwork ? artwork.lookup(title, artist) : { album: null, artist: null }));
 
   // Discord Connection
   ipcMain.handle('discord:configure', (_e, { enabled, clientId }) => presence.configure({ enabled, clientId: clientId || DISCORD_CLIENT_ID }));
