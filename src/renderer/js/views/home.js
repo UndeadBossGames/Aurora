@@ -16,7 +16,13 @@ Views.home = {
     });
 
     // ---- hero ----
-    if (!pr.heroHidden && filter === 'all') root.appendChild(hero());
+    if (filter === 'all') {
+      const panel = html(`<section class="home-discover">
+        <div class="hd-text"><div class="hd-eyebrow">${icon('sparkle', 14)} Discover</div><h1 class="hd-title">Search, watch and download anything</h1><p>Find songs and videos on YouTube or SoundCloud, preview them here, then keep them forever in your library.</p></div>
+      </section>`);
+      panel.appendChild(discoverSearchBox());
+      root.appendChild(panel);
+    }
     root.appendChild(chips);
 
     if (!all.length) {
