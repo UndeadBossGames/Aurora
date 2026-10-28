@@ -27,6 +27,8 @@ Updating works the same way: run the newer installer. Your profiles, playlists a
 | **Discover** | Search YouTube or SoundCloud from Home, preview a video inside Aurora, then download it as MP4 or MP3. |
 | **Friends** | Share your friend code, add friends, and see what they're listening to live. No account needed. |
 | **Listen Together** | Host a session, share the code, and everyone hears the same song at the same second, with chat and reactions. Missing songs are fetched automatically. |
+| **Transfer songs** | Each profile has its own songs. Copy or move them to another profile, or share them with everyone. |
+| **iPhone** | [Aurora for iPhone](https://github.com/UndeadBossGames/Aurora-iOS) runs the same app on your phone (sideloaded, not the App Store). |
 | **Your profile** | Bio, pronouns, status, banner, profile effects, and your favorite song, album and artist. |
 | **Aurora Store** | 15 themes, 10 fonts, profile effects, player bar effects and one-click bundles. You can export and import themes as files. |
 | **Discord Connection** | Shows what you're listening to on your Discord profile, with artwork, a progress bar and a link to the source. Turn it on from the avatar menu → Discord Connection, with the Discord desktop app open. |

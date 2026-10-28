@@ -2,6 +2,12 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.5.0 — 2026-10-28
+- **Songs belong to profiles**: new downloads and imports go to the profile that added them, so every profile has its own library. Songs from before 1.5 stay shared with everyone
+- **Transfer songs**: copy or move songs to another profile, or share them with every profile. Open it from your profile page, the Downloads page, or right-click a song → "Send to another profile…". Moving doesn't duplicate files
+- Deleting a profile makes the songs only it owned shared, so nothing disappears
+- **Aurora for iPhone** is here: see [Aurora-iOS](https://github.com/UndeadBossGames/Aurora-iOS)
+
 ## v1.4.0 — 2026-10-28
 - **Listen Together**: host a session and share its code (like `LT-7KQ2M9`). Everyone who joins hears the same song at the same second; play, pause, seek and skip follow the host. If a guest doesn't have the song, Aurora downloads it for them automatically. Includes a member list, chat with emoji reactions, a Resync button, and a Join button on friends who are hosting
 - **Seamless in-app updates**: new versions download in the background inside Aurora. One click on "Restart to update" installs silently and reopens the app, with no installer wizard. You can turn automatic downloads off
