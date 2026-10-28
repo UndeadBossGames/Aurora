@@ -51,7 +51,18 @@ const Friends = (() => {
   async function buildPayload() {
     const p = State.activeProfile() || { name: 'Aurora user', color: '#8b7bff' };
     const t = Player.current;
-    const base = { v: 1, name: p.name, color: p.color, avatar: await avatarThumb(p), ts: Date.now() };
+    const base = {
+      v: 1, name: p.name, color: p.color, avatar: await avatarThumb(p), ts: Date.now(),
+      // public profile card (what friends see when they open your profile)
+      profile: {
+        bio: p.bio || '', pronouns: p.pronouns || '', statusEmoji: p.statusEmoji || '', statusText: p.statusText || '',
+        effect: p.effect || '', banner: p.banner && p.banner.type === 'gradient' ? p.banner : null,
+        favSong: p.favSong ? { title: p.favSong.title, artist: p.favSong.artist, cover: p.favSong.coverUrl || null } : null,
+        favAlbum: p.favAlbum ? { name: p.favAlbum.name, artist: p.favAlbum.artist, cover: p.favAlbum.coverUrl || null } : null,
+        favArtist: p.favArtist ? { name: p.favArtist.name, cover: p.favArtist.coverUrl || null } : null,
+      },
+      together: typeof ListenTogether !== 'undefined' ? ListenTogether.hostCode : null,
+    };
     if (!t) return { ...base, status: 'online' };
     let cover = t.coverUrl && /^https:/.test(t.coverUrl) ? t.coverUrl : null;
     try { const art = await native.art.lookup(t.title, t.artist); if (art && art.album) cover = art.album; } catch {}
@@ -153,6 +164,7 @@ const Friends = (() => {
     start();
     Player.on('track', () => publish());
     Player.on('state', () => publish());
+    if (typeof ListenTogether !== 'undefined') ListenTogether.onChange(() => publish());
     Player.media.addEventListener('seeked', () => publish(true));
     State.on('profile', () => start());
     State.on('profiles', () => publish(true));

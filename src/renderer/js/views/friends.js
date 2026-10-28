@@ -68,7 +68,7 @@ Views.friends = {
         const live = p.status === 'listening' || p.status === 'paused';
         const ago = p.ts ? fmtDate(p.ts) : '';
         const statusText = {
-          listening: 'Listening now', paused: 'Paused', online: 'Online', offline: ago ? `Last seen ${ago}` : 'Offline', unknown: 'Waiting for their first update…',
+          listening: p.together ? 'Hosting Listen Together' : 'Listening now', paused: 'Paused', online: 'Online', offline: ago ? `Last seen ${ago}` : 'Offline', unknown: 'Waiting for their first update…',
         }[p.status] || '';
         let pos = 0;
         if (t && t.duration) pos = Math.min(t.duration, (t.position || 0) + (p.status === 'listening' ? (Date.now() - p.ts) / 1000 : 0));
@@ -86,11 +86,16 @@ Views.friends = {
             </div>` : ''}
           </div>
           <div class="fr-actions">
-            ${live && t ? `<button class="btn-accent sm fr-find">${icon('search', 14)} Find it</button>` : ''}
+            ${p.together && p.status !== 'offline' ? `<button class="btn-accent sm fr-join">${icon('headphones', 14)} Join</button>` : ''}
+            ${live && t ? `<button class="${p.together ? 'btn-outline' : 'btn-accent'} sm fr-find">${icon('search', 14)} Find it</button>` : ''}
             ${live && t && t.url ? `<button class="icon-btn small fr-open" title="Open on ${esc(t.source || 'web')}">${icon('external', 16)}</button>` : ''}
             <button class="icon-btn small fr-more" title="More">${icon('dotsH', 18)}</button>
           </div>
         </div>`);
+        const join = $('.fr-join', card);
+        if (join) join.onclick = () => { try { ListenTogether.join(p.together); App.go('together'); } catch (e) { UI.toast(e.message); } };
+        $('.fr-av', card).onclick = () => Views.profile.friendModal(f, p);
+        $('.fr-name', card).onclick = () => Views.profile.friendModal(f, p);
         const find = $('.fr-find', card);
         if (find) find.onclick = () => App.go('discover', `${t.artist && t.artist !== 'Unknown artist' ? t.artist + ' ' : ''}${t.title}`);
         const open = $('.fr-open', card);
