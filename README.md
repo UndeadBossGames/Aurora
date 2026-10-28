@@ -24,6 +24,9 @@ Updating works the same way: run the newer installer. Your profiles, playlists a
 | **Spotify links** | Spotify audio is DRM-protected, so Aurora reads the track names from a Spotify track, album or playlist link and downloads the best matching public upload from YouTube. |
 | **Plays everything** | MP3, M4A, FLAC, WAV, OGG, Opus, MP4, WebM and MKV. Videos play in the Now Playing panel, in full screen (F11) or in a pop-out picture-in-picture window. |
 | **Library** | Favorites, playlists with custom covers, artist pages, search, sorting, a queue, shuffle and repeat. You can drag files or folders onto the window to import them. |
+| **Discover** | Search YouTube or SoundCloud from Home, preview a video inside Aurora, then download it as MP4 or MP3. |
+| **Friends** | Share your friend code, add friends, and see what they're listening to live. No account needed. |
+| **Aurora Store** | One-click themes, fonts, player styles and effects. You can export and import themes as files. |
 | **Discord Connection** | Shows what you're listening to on your Discord profile, with artwork, a progress bar and a link to the source. Turn it on from the avatar menu → Discord Connection, with the Discord desktop app open. |
 | **Make it yours** | Settings → Appearance lets you pick an accent colour and write custom CSS. For deeper changes, edit `user.css` / `user.js` in the custom folder, or change the source (see below). |
 

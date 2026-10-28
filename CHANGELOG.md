@@ -2,6 +2,15 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.3.0 — 2026-10-28
+- **Discover**: a search panel at the top of Home and a full Discover page. Search YouTube or SoundCloud, preview inside Aurora, then download as video or audio in one click, with live progress on each result
+- **Create playlist** has been rebuilt: name, description, a cover photo and songs (with "All downloads" / "All favorites" shortcuts) in one window
+- Fixed: uploaded photos now change playlist covers and profile pictures. WebP, GIF, AVIF and BMP images used to fail silently
+- **Downloads** page: stats (items, songs, videos, disk space, sources), Music/Videos filter, a new grid view with thumbnails, plus "Open folder" and "Download more" buttons. The Video Downloader tab now shows your recent downloads
+- **Friends**: every profile gets a friend code. Add friends by code and see live what they're listening to (song, artist, cover, progress), then find and download it yourself. You can turn sharing off at any time
+- **Aurora Store**: 8 themes (Aurora Night, Midnight Mono, Sunset Drive, Ocean Depths, Sakura, Evergreen, Neon Arcade, Golden Hour), 5 font styles, 3 player styles and 5 effects (moving aurora, glass panels, album color glow, extra round, big artwork). You can import and export themes as files
+- Title bar: a new Store button and a Friends button that shows how many friends are listening right now
+
 ## v1.2.1 — 2026-10-28
 - Discord Connection now shows the song's **album cover** as the main picture and a **photo of the artist** in the small bubble. Both are looked up online through Deezer's public catalogue and cached. You can turn this off on the Discord Connection page
 - If no match is found, it falls back to the downloaded thumbnail, then the Aurora logo

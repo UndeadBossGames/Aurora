@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; img-src 'self' file: data: blob: https:; media-src 'self' file: blob:; style-src 'self' 'unsafe-inline' file:; script-src 'self' 'unsafe-inline' file:; connect-src 'self' file: data: blob:" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; img-src 'self' file: data: blob: https:; media-src 'self' file: blob:; style-src 'self' 'unsafe-inline' file:; script-src 'self' 'unsafe-inline' file:; connect-src 'self' file: data: blob: https: wss:; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://w.soundcloud.com" />
   <title>Aurora</title>
   <link rel="stylesheet" href="css/app.css" />
   <link rel="stylesheet" href="css/theme-aurora.css" />
@@ -28,7 +28,9 @@
         </div>
       </div>
       <div class="topbar-right no-drag">
-        <button class="update-btn" id="btn-update" title="Check for updates"><span class="update-ic" data-icon="refresh" data-icon-size="16"></span><span class="update-label">Check for updates</span></button>
+        <button class="store-btn" id="btn-store" title="Aurora Store"><span data-icon="bag" data-icon-size="16"></span><span>Store</span></button>
+        <button class="icon-btn small" id="btn-friends" title="Friends" data-icon="users"></button>
+        <button class="update-btn" id="btn-update" title="Check for updates"><span class="update-ic" data-icon="refresh" data-icon-size="16"></span><span class="update-label">Updates</span></button>
         <button class="icon-btn small" id="btn-whatsnew" title="What's New" data-icon="bell"></button>
         <button class="icon-btn small" id="btn-downloader-top" title="Video Downloader" data-icon="download"></button>
         <button class="avatar-btn" id="btn-avatar" title="Profile"><span class="avatar" id="top-avatar"></span></button>
@@ -121,9 +123,15 @@
   <script src="js/views/collection.js"></script>
   <script src="js/views/profile.js"></script>
   <script src="js/views/downloader.js"></script>
+  <script src="js/views/discover.js"></script>
+  <script src="js/views/friends.js"></script>
+  <script src="js/views/store.js"></script>
   <script src="js/views/settings.js"></script>
   <script src="js/updates.js"></script>
   <script src="js/discord.js"></script>
+  <script src="js/mqtt.js"></script>
+  <script src="js/friends.js"></script>
+  <script src="js/store.js"></script>
   <script src="js/views/discord.js"></script>
   <script src="js/app.js"></script>
 </body>

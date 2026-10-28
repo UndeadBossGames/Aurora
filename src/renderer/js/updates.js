@@ -10,9 +10,9 @@ const Updates = (() => {
     b.classList.remove('checking', 'available', 'uptodate');
     if (state) b.classList.add(state);
     $('.update-label', b).textContent = label;
-    b.title = label;
+    b.title = state === 'available' ? label : label === 'Updates' ? 'Check for updates' : label;
   }
-  const idle = () => setBtn('', 'Check for updates');
+  const idle = () => setBtn('', 'Updates');
 
   async function check({ silent = false } = {}) {
     if (busy) return info;

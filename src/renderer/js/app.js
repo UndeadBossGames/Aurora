@@ -85,6 +85,8 @@ const App = (() => {
     $('#btn-fwd').onclick = forward;
     $('#btn-home').onclick = () => go('home');
     $('#btn-brand').onclick = () => go('home');
+    $('#btn-store').onclick = () => go('store');
+    $('#btn-friends').onclick = () => go('friends');
     $('#btn-browse').onclick = () => go('search', '');
     $('#btn-downloader-top').onclick = () => go('downloader');
     $('#btn-whatsnew').onclick = whatsNew;
@@ -120,6 +122,9 @@ const App = (() => {
         { label: 'Manage profiles', icon: 'edit', action: () => showProfilePicker({ manage: true }) },
       ] },
       { label: 'Video Downloader', icon: 'download', action: () => go('downloader') },
+      { label: 'Friends', icon: 'users', action: () => go('friends') },
+      { label: 'Discover', icon: 'search', action: () => go('discover') },
+      { label: 'Aurora Store', icon: 'bag', action: () => go('store') },
       { label: 'Discord Connection', icon: 'discord', action: () => go('discord') },
       { label: 'Settings', icon: 'settings', action: () => go('settings') },
       { divider: true },
@@ -263,6 +268,7 @@ const App = (() => {
   }
 
   function newPlaylist(trackIds = []) {
+    if (!Array.isArray(trackIds) || !trackIds.length) return Views.collection.createModal();
     const pl = State.createPlaylist({ trackIds });
     go('collection', 'pl:' + pl.id);
     return pl;
@@ -755,7 +761,7 @@ const App = (() => {
       const input = $('input', form);
       const preview = () => { $('.pa-preview', form).innerHTML = UI.avatarHtml({ name: input.value || 'L', color, avatar }, 120); };
       input.addEventListener('input', preview);
-      $('.picker-avatar-edit', form).onclick = async () => { const a = await native.dialog.image(); if (a) { avatar = a; preview(); } };
+      $('.picker-avatar-edit', form).onclick = async () => { const a = await pickPhoto(); if (a) { avatar = a; preview(); } };
       const go2 = async () => {
         const p = await State.createProfile({ name: input.value || 'Listener', avatar, color });
         await State.switchProfile(p.id);
@@ -887,6 +893,10 @@ const App = (() => {
     initDownloads();
     Updates.init();
     DiscordConn.init();
+    Store.init();
+    Friends.init();
+    const badge = () => { const n = Friends.listeningCount(); const b = $('#btn-friends'); b.classList.toggle('busy', n > 0); b.dataset.count = n || ''; b.title = n ? `Friends · ${n} listening now` : 'Friends'; };
+    Friends.onChange(badge);
     State.on('library', () => { renderLibrary(); rerender(); });
     State.on('likes', () => { renderNowPlayingBar(); renderRightPanel(); });
     State.on('profiles', renderAvatar);

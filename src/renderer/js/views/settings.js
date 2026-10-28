@@ -21,6 +21,7 @@ Views.settings = {
       </section>
 
       <section><h2>Appearance</h2>
+        <div class="set-row"><div><b>${icon('bag', 18)} Aurora Store</b><span>Themes, fonts, player styles and effects in one place.</span></div><button class="btn-accent sm s-store">Open Store</button></div>
         <div class="set-row"><div><b>Accent colour</b><span>Used for play buttons, toggles and highlights.</span></div><div class="accent-row">${ACCENTS.map((c) => `<button class="swatch ${pr.accent === c ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('')}<label class="swatch custom" title="Custom colour"><input type="color" value="${esc(pr.accent || '#1ed760')}" /></label></div></div>
         <div class="set-row"><div><b>Show the Now Playing panel</b><span>Display the right-hand panel with artwork and video.</span></div><input type="checkbox" class="toggle s-rp" ${pr.showRightPanel ? 'checked' : ''}/></div>
         <div class="set-row"><div><b>Show "Featured" card on Home</b></div><input type="checkbox" class="toggle s-hero" ${!pr.heroHidden ? 'checked' : ''}/></div>
@@ -58,6 +59,7 @@ Views.settings = {
     root.appendChild(el);
     const q = (sel) => $(sel, el);
 
+    q('.s-store').onclick = () => App.go('store');
     q('.s-dc').onchange = (e) => DiscordConn.setEnabled(e.target.checked);
     q('.s-dc-open').onclick = () => App.go('discord');
     q('.s-edit').onclick = () => Views.profile.editModal(me, () => App.render());
