@@ -47,6 +47,7 @@ Views.downloader = {
           <div class="dl-select"><select id="dl-format"></select><span data-icon="chevronDown" data-icon-size="16"></span></div>
           <button class="btn-accent big" id="dl-go">Download</button>
         </div>
+        <div class="dl-or muted">Don't have a link? <button class="link-btn dl-discover">${icon('search', 14)} Search YouTube or SoundCloud in Discover</button></div>
         <div class="dl-options">
           <label class="dl-check"><input type="checkbox" id="dl-lib" class="toggle" ${s.dlAddToLibrary ? 'checked' : ''}/> <span>Add to Library</span></label>
           <label class="dl-check"><input type="checkbox" id="dl-pl" class="toggle" ${s.dlPlaylist ? 'checked' : ''}/> <span>Download whole playlist / album</span></label>
@@ -57,6 +58,7 @@ Views.downloader = {
 
       <div class="dl-queue-head"><h2>Downloads</h2><div><button class="btn-outline sm dl-clear">Clear finished</button></div></div>
       <div class="dl-list" id="dl-list"></div>
+      <div class="dl-recent"></div>
 
       <div class="dl-tools">
         <div class="dl-tools-head"><b>Download engine</b><span class="dl-tool-status muted">${esc(DL.toolStatus)}</span></div>
@@ -113,6 +115,17 @@ Views.downloader = {
     dlEmpty();
 
     native.dl.tools().then((t) => { DL.tools = t; dlRenderTools(); });
+    $('.dl-discover', el).onclick = () => App.go('discover');
+    // recently downloaded (from the library, so it survives restarts)
+    const recent = State.allTracks().filter((t) => t.source !== 'local').sort((a, b) => b.addedAt - a.addedAt).slice(0, 10);
+    if (recent.length) {
+      const host = $('.dl-recent', el);
+      host.appendChild(UI.shelf('Recently downloaded', recent.map((t, i) => UI.card({
+        title: t.title, sub: esc(`${t.artist} · ${t.source}${t.size ? ' · ' + fmtBytes(t.size) : ''}`), cover: UI.coverSrc(t),
+        onOpen: () => Player.playContext({ key: 'downloads', name: 'Downloads' }, recent.map((x) => x.id), i),
+        onPlay: () => Player.playContext({ key: 'downloads', name: 'Downloads' }, recent.map((x) => x.id), i),
+      })), { onMore: () => App.go('collection', 'downloads') }));
+    }
     hydrateIcons(el);
   },
 };
