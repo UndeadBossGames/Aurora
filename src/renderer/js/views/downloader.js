@@ -190,6 +190,15 @@ function dlRenderTools() {
   const b = $('#dl-tools-body');
   if (!b || !DL.tools) return;
   const t = DL.tools;
+  if (t.ios) {
+    // iPhone: yt-dlp runs inside the app; AVFoundation merges video + audio, so no ffmpeg
+    b.innerHTML = `
+      <div class="tool"><span class="tool-dot ${t.ytdlp ? 'ok' : 'bad'}"></span><div><b>yt-dlp</b><span class="muted">${t.ytdlp ? 'Version ' + esc(t.ytdlp) + (t.updated ? ' (updated in the app)' : '') : esc(t.error || 'Starting…')}</span></div><button class="btn-outline sm tool-upd">Check for update</button></div>
+      <div class="tool"><span class="tool-dot ok"></span><div><b>Video + audio merging</b><span class="muted">Built into iOS. Best-quality videos are joined on your iPhone, no extra tools needed.</span></div></div>`;
+    const u = b.querySelector('.tool-upd');
+    u.onclick = async () => { u.disabled = true; try { await native.dl.updateYtdlp(); } catch (e) { UI.toast('Update failed: ' + e.message); } u.disabled = false; };
+    return;
+  }
   b.innerHTML = `
     <div class="tool"><span class="tool-dot ${t.ytdlp ? 'ok' : 'bad'}"></span><div><b>yt-dlp</b><span class="muted">${t.ytdlp ? 'Version ' + esc(t.ytdlp) : 'Not installed — it will be downloaded automatically'}</span></div><button class="btn-outline sm tool-upd">${t.ytdlp ? 'Check for update' : 'Install'}</button></div>
     <div class="tool"><span class="tool-dot ${t.ffmpeg ? 'ok' : 'warn'}"></span><div><b>ffmpeg</b><span class="muted">${t.ffmpeg ? 'Installed — best quality, MP3 conversion and merging enabled' : t.ffmpegInstalling ? 'Installing…' : 'Needed for HD video and MP3. Installed automatically on first download.'}</span></div>${t.ffmpeg ? '' : '<button class="btn-outline sm tool-ff">Install now</button>'}</div>`;
