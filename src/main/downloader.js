@@ -31,7 +31,7 @@ class Downloader extends EventEmitter {
     this.coversDir = coversDir;
     this.jobs = new Map();
     this.queue = [];
-    this.maxConcurrent = 2;
+    this.maxConcurrent = 4; // several songs at once; each one also downloads in parallel pieces (-N)
     this.running = 0;
     this.ffmpegInstalling = null;
     fs.mkdirSync(binDir, { recursive: true });
@@ -199,7 +199,27 @@ class Downloader extends EventEmitter {
   }
 
   // ---------- jobs ----------
-  async add({ url, format = 'video-best', dir, playlist = false, addToLibrary = true }) {
+  // Lists a playlist's videos without downloading anything (used to download playlists in parallel).
+  async listPlaylist(url) {
+    if (!fs.existsSync(this.ytdlp)) await this.updateYtdlp();
+    const out = await new Promise((resolve, reject) => {
+      execFile(this.ytdlp, ['-J', '--flat-playlist', '--no-warnings', '--ignore-errors', '--yes-playlist', url], { windowsHide: true, maxBuffer: 128 * 1024 * 1024, timeout: 120000, env: { ...process.env, PYTHONUTF8: '1' } }, (err, stdout, stderr) => {
+        if (err && !stdout) return reject(new Error((String(stderr).match(/ERROR:.*$/m) || [err.message])[0].replace(/^ERROR:\s*/, '')));
+        resolve(stdout);
+      });
+    });
+    const data = JSON.parse(out);
+    if (data._type !== 'playlist' || !Array.isArray(data.entries)) return null;
+    return {
+      title: data.title || 'Playlist',
+      entries: data.entries.filter(Boolean).map((e) => ({
+        url: e.webpage_url || (e.url && /^https?:/.test(e.url) ? e.url : e.ie_key === 'Youtube' || /youtube/i.test(url) ? `https://www.youtube.com/watch?v=${e.id}` : e.url),
+        title: e.title || e.id,
+      })).filter((e) => e.url && /^https?:/.test(e.url)),
+    };
+  }
+
+  async add({ url, format = 'video-best', dir, playlist = false, addToLibrary = true, parallel = true, tag = null }) {
     url = String(url || '').trim();
     if (!url) throw new Error('Paste a link first');
     if (!/^https?:\/\//i.test(url) && !/^ytsearch\d*:/i.test(url)) {
@@ -216,7 +236,14 @@ class Downloader extends EventEmitter {
         created.push(this.createJob({ url: q, displayUrl: url, title: `${t.artist ? t.artist + ' - ' : ''}${t.title}`, source: 'Spotify', format: fmt, dir, playlist: false, addToLibrary, meta: t }));
       }
     } else {
-      created.push(this.createJob({ url, displayUrl: url, title: url.replace(/^ytsearch1:/, 'Search: '), source: sourceName(url), format, dir, playlist, addToLibrary }));
+      // Playlists: one job per video so several download at the same time (much faster than one by one)
+      let list = null;
+      if (playlist && parallel && /^https?:/i.test(url)) { try { list = await this.listPlaylist(url); } catch { list = null; } }
+      if (list && list.entries.length > 1) {
+        for (const e of list.entries.slice(0, 2000)) created.push(this.createJob({ url: e.url, displayUrl: url, title: e.title, source: sourceName(url), format, dir, playlist: false, addToLibrary, group: list.title, tag }));
+      } else {
+        created.push(this.createJob({ url, displayUrl: url, title: url.replace(/^ytsearch1:/, 'Search: '), source: sourceName(url), format, dir, playlist, addToLibrary, tag }));
+      }
     }
     this.pump();
     return created.map((j) => this.public(j));
@@ -273,6 +300,7 @@ class Downloader extends EventEmitter {
     const ff = this.hasFfmpeg();
     const args = [
       '--newline', '--no-mtime', '--windows-filenames', '--no-colors',
+      '-N', '4', // download fragments in parallel: much faster on YouTube
       job.playlist ? '--yes-playlist' : '--no-playlist',
       '-o', path.join(job.dir, '%(title).140B [%(id)s].%(ext)s'),
       '--progress-template', 'download:AURORA_PROG %(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s',
