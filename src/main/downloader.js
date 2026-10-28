@@ -378,6 +378,7 @@ class Downloader extends EventEmitter {
       source: job.source || info.extractor_key || 'web',
       url: info.webpage_url || job.displayUrl,
       cover,
+      coverUrl: thumbUrl && /^https:\/\//.test(thumbUrl) ? thumbUrl : null,
       addedAt: Date.now(),
     };
   }

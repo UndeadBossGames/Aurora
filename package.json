@@ -1,7 +1,7 @@
 {
   "name": "aurora",
   "productName": "Aurora",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Aurora - a desktop music & video player with profiles and a built-in video downloader.",
   "main": "src/main/main.js",
   "author": "RJ",
@@ -15,6 +15,7 @@
   },
   "aurora": {
     "electronVersion": "39.2.0",
-    "repository": "https://github.com/UndeadBossGames/Aurora"
+    "repository": "https://github.com/UndeadBossGames/Aurora",
+    "discordClientId": "1564900463105540106"
   }
 }

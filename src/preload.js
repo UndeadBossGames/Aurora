@@ -39,6 +39,12 @@ contextBridge.exposeInMainWorld('native', {
     deleteFile: invoke('library:deleteFile'),
   },
   shell: { showItem: invoke('shell:showItem'), openPath: invoke('shell:openPath'), openExternal: invoke('shell:openExternal') },
+  discord: {
+    configure: invoke('discord:configure'),
+    status: invoke('discord:status'),
+    nowPlaying: invoke('discord:nowPlaying'),
+    onStatus: on('discord:status'),
+  },
   update: {
     check: invoke('update:check'),
     install: invoke('update:install'),

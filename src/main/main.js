@@ -6,6 +6,7 @@ const Store = require('./store');
 const media = require('./media');
 const { Downloader } = require('./downloader');
 const { Updater } = require('./updater');
+const { DiscordPresence, buildActivity } = require('./discord');
 
 app.setName('Aurora');
 // Optional: AURORA_USER_DATA=<folder> (or a "data" folder next to Aurora.exe) = portable mode
@@ -31,6 +32,10 @@ let win = null;
 let downloader = null;
 const updater = new Updater();
 updater.on('progress', (p) => send('update:progress', p));
+const presence = new DiscordPresence();
+presence.on('status', (s) => send('discord:status', s));
+const PKG = require(path.join(__dirname, '..', '..', 'package.json'));
+const DISCORD_CLIENT_ID = (PKG.aurora && PKG.aurora.discordClientId) || '';
 
 function ensureCustomFiles() {
   const css = path.join(CUSTOM, 'user.css');
@@ -47,11 +52,11 @@ function createWindow() {
     minWidth: 860,
     minHeight: 600,
     show: false,
-    backgroundColor: '#000000',
+    backgroundColor: '#07080d',
     icon,
     title: 'Aurora',
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#000000', symbolColor: '#ffffff', height: 64 },
+    titleBarOverlay: { color: '#07080d', symbolColor: '#ffffff', height: 64 },
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload.js'),
       contextIsolation: true,
@@ -106,6 +111,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => app.quit());
+app.on('before-quit', () => presence.disconnect());
 
 // ---------------- IPC ----------------
 function registerIpc() {
@@ -201,4 +207,9 @@ function registerIpc() {
   // updates
   ipcMain.handle('update:check', () => updater.check());
   ipcMain.handle('update:install', () => updater.downloadAndInstall());
+
+  // Discord Connection
+  ipcMain.handle('discord:configure', (_e, { enabled, clientId }) => presence.configure({ enabled, clientId: clientId || DISCORD_CLIENT_ID }));
+  ipcMain.handle('discord:status', () => ({ ...presence.status(), defaultClientId: DISCORD_CLIENT_ID }));
+  ipcMain.handle('discord:nowPlaying', (_e, np, opts) => { presence.setActivity(buildActivity(np, opts)); return true; });
 }
