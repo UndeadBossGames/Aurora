@@ -85,11 +85,7 @@ const App = (() => {
     $('#btn-fwd').onclick = forward;
     $('#btn-home').onclick = () => go('home');
     $('#btn-brand').onclick = () => go('home');
-    $('#btn-store').onclick = () => go('store');
-    $('#btn-friends').onclick = () => go('friends');
     $('#btn-browse').onclick = () => go('search', '');
-    $('#btn-downloader-top').onclick = () => go('downloader');
-    $('#btn-whatsnew').onclick = whatsNew;
     const input = $('#search-input');
     input.addEventListener('focus', () => { if (!current || current.view !== 'search') go('search', input.value || ''); });
     input.addEventListener('input', debounce(() => go('search', input.value, { replace: current && current.view === 'search' }), 180));
@@ -98,15 +94,17 @@ const App = (() => {
       if (e.key === 'Escape') input.blur();
     });
     $('#search-pill').addEventListener('click', (e) => { if (e.target.closest('.browse-btn')) return; input.focus(); });
-    $('#btn-avatar').onclick = (e) => avatarMenu(e.currentTarget);
+    $('#btn-hub').onclick = (e) => { e.stopPropagation(); hubMenu(e.currentTarget); };
     $('#btn-menu').onclick = (e) => mainMenu(e.currentTarget);
     $('#topbar').addEventListener('dblclick', (e) => { if (e.target === $('#topbar')) native.app.fullscreen(); });
   }
 
   function renderAvatar() {
     const p = State.activeProfile();
-    $('#top-avatar').innerHTML = UI.avatarHtml(p, 32);
-    $('#btn-avatar').title = p ? p.name : 'Profile';
+    $('#top-avatar').innerHTML = UI.avatarHtml(p, 30);
+    $('#hub-name').textContent = p ? p.name : '';
+    $('#btn-hub').title = p ? `${p.name} · Menu` : 'Menu';
+    $('#top-avatar').dataset.effect = (p && p.effect) || '';
   }
 
   function avatarMenu(btn) {
@@ -130,6 +128,71 @@ const App = (() => {
       { divider: true },
       { label: 'Log out', icon: 'logout', action: () => showProfilePicker() },
     ], r.right, r.bottom + 8, { alignRight: true, minWidth: 196 });
+  }
+
+  // ---- the one menu at the top right: profile, every feature, updates ----
+  function hubAlerts() {
+    const u = Updates.state;
+    const friends = Friends.listeningCount();
+    const dl = typeof DL !== 'undefined' ? [...DL.jobs.values()].filter((j) => ['queued', 'downloading', 'preparing'].includes(j.status)).length : 0;
+    return { update: u.phase === 'available' || u.phase === 'ready' || u.phase === 'downloading', updateReady: u.phase === 'ready', friends, dl };
+  }
+  function updateHubDot() {
+    const a = hubAlerts();
+    const n = (a.update ? 1 : 0) + (a.friends ? 1 : 0) + (a.dl ? 1 : 0);
+    const dot = $('#hub-dot');
+    if (dot) { dot.hidden = !n; dot.classList.toggle('upd', a.update); }
+  }
+
+  function hubMenu(btn) {
+    const existing = $('.hub-panel');
+    if (existing) { existing.remove(); return; }
+    UI.closeMenu();
+    const me = State.activeProfile();
+    const a = hubAlerts();
+    const u = Updates.state;
+    const tiles = [
+      ['discover', 'search', 'Discover', 'Search & download'],
+      ['friends', 'users', 'Friends', a.friends ? `${a.friends} listening now` : 'See what friends play'],
+      ['together', 'headphones', 'Listen Together', ListenTogether.inSession ? 'In a session' : 'Same song, same time'],
+      ['store', 'bag', 'Store', 'Themes & effects'],
+      ['downloader', 'download', 'Downloader', a.dl ? `${a.dl} downloading` : 'Paste any link'],
+      ['discord', 'discord', 'Discord', DiscordConn.opts().enabled ? 'Connected' : 'Show your music'],
+    ];
+    const updLabel = { available: `Update to ${u.info && u.info.latest}`, downloading: `Downloading update ${Math.round(u.ratio * 100)}%`, ready: 'Restart to update', installing: 'Updating…', checking: 'Checking…', uptodate: "You're up to date" }[u.phase] || 'Check for updates';
+    const panel = html(`<div class="hub-panel">
+      <button class="hub-profile">
+        <span class="hub-av" data-effect="${esc(me.effect || '')}">${UI.avatarHtml(me, 52)}</span>
+        <span class="hub-pt"><b>${esc(me.name)}</b><small>${me.statusText ? `${esc(me.statusEmoji || '')} ${esc(me.statusText)}` : 'View profile'}</small></span>
+        <span data-icon="chevronRight" data-icon-size="16"></span>
+      </button>
+      <div class="hub-tiles">${tiles.map(([v, ic, t, s]) => `<button class="hub-tile" data-v="${v}"><span class="ht-ic">${icon(ic, 22)}</span><b>${t}</b><small>${esc(s)}</small>${(v === 'friends' && a.friends) || (v === 'downloader' && a.dl) || (v === 'together' && ListenTogether.inSession) ? '<i class="ht-dot"></i>' : ''}</button>`).join('')}</div>
+      <div class="hub-list">
+        <button class="hub-item hub-upd ${a.update ? 'hot' : ''}">${icon('refresh', 16)}<span>${esc(updLabel)}</span>${a.update ? '<i class="ht-dot"></i>' : ''}</button>
+        <button class="hub-item" data-act="new">${icon('bell', 16)}<span>What's new</span></button>
+        <button class="hub-item" data-act="settings">${icon('settings', 16)}<span>Settings</span></button>
+      </div>
+      <div class="hub-switch">
+        <span class="muted">Switch profile</span>
+        <div class="hub-profiles">${State.profiles().map((p) => `<button class="hub-pf ${p.id === me.id ? 'on' : ''}" data-id="${p.id}" title="${esc(p.name)}">${UI.avatarHtml(p, 30)}</button>`).join('')}<button class="hub-pf add" title="Add profile">${icon('plus', 16)}</button></div>
+      </div>
+      <div class="hub-foot"><button class="hub-item" data-act="logout">${icon('logout', 16)}<span>Log out</span></button><span class="muted">Aurora ${esc(State.S.info.version)}</span></div>
+    </div>`);
+    const close = () => { panel.remove(); document.removeEventListener('mousedown', outside, true); document.removeEventListener('keydown', esc1); };
+    const outside = (e) => { if (!panel.contains(e.target) && !btn.contains(e.target)) close(); };
+    const esc1 = (e) => { if (e.key === 'Escape') close(); };
+    $('.hub-profile', panel).onclick = () => { close(); go('profile', me.id); };
+    $$('.hub-tile', panel).forEach((t) => t.onclick = () => { close(); go(t.dataset.v); });
+    $('.hub-upd', panel).onclick = () => { close(); if (u.phase === 'ready') Updates.install(); else Updates.open(); };
+    $$('.hub-item[data-act]', panel).forEach((b) => b.onclick = () => { close(); ({ new: whatsNew, settings: () => go('settings'), logout: () => showProfilePicker() })[b.dataset.act](); });
+    $$('.hub-pf[data-id]', panel).forEach((b) => b.onclick = () => { close(); if (b.dataset.id !== me.id) switchProfile(b.dataset.id); });
+    $('.hub-pf.add', panel).onclick = () => { close(); Views.profile.createModal(); };
+    document.body.appendChild(panel);
+    hydrateIcons(panel);
+    const r = btn.getBoundingClientRect();
+    panel.style.top = r.bottom + 8 + 'px';
+    panel.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+    setTimeout(() => { document.addEventListener('mousedown', outside, true); document.addEventListener('keydown', esc1); });
   }
 
   function mainMenu(btn) {
@@ -895,8 +958,9 @@ const App = (() => {
     DiscordConn.init();
     Store.init();
     Friends.init();
-    const badge = () => { const n = Friends.listeningCount(); const b = $('#btn-friends'); b.classList.toggle('busy', n > 0); b.dataset.count = n || ''; b.title = n ? `Friends · ${n} listening now` : 'Friends'; };
-    Friends.onChange(badge);
+    ListenTogether.init();
+    Friends.onChange(updateHubDot);
+    Updates.onChange(updateHubDot);
     State.on('library', () => { renderLibrary(); rerender(); });
     State.on('likes', () => { renderNowPlayingBar(); renderRightPanel(); });
     State.on('profiles', renderAvatar);
@@ -924,6 +988,7 @@ const App = (() => {
     refreshNowPlaying: () => { renderNowPlayingBar(); renderRightPanel(); },
     playCollection, collectionMenu, newPlaylist, importFiles, importFolder, rescanFolders,
     switchProfile, showProfilePicker, afterProfileChange, toggleRightPanel, about,
+    _updateHubDot: () => updateHubDot(),
     get current() { return current; },
     boot,
   };

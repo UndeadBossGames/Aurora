@@ -18,9 +18,7 @@ function dlBind() {
 
 function dlBadge() {
   const active = [...DL.jobs.values()].filter((j) => ['queued', 'downloading', 'preparing'].includes(j.status)).length;
-  const b = $('#btn-downloader-top');
-  b.classList.toggle('busy', active > 0);
-  b.dataset.count = active || '';
+  if (App._updateHubDot) App._updateHubDot();
 }
 
 const SOURCES = ['YouTube', 'YouTube Music', 'SoundCloud', 'Spotify', 'Vimeo', 'TikTok', 'Instagram', 'X / Twitter', 'Twitch', 'Bandcamp', 'Facebook', 'Reddit', 'Dailymotion', 'Mixcloud'];
