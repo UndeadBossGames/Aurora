@@ -904,7 +904,7 @@ const App = (() => {
   }
 
   return {
-    REPO: 'https://github.com/RJCalzone/Aurora',
+    REPO: 'https://github.com/UndeadBossGames/Aurora',
     go, back, forward, render, rerender, setHeaderColor, applyTheme, renderLibrary, renderRightPanel,
     refreshNowPlaying: () => { renderNowPlayingBar(); renderRightPanel(); },
     playCollection, collectionMenu, newPlaylist, importFiles, importFolder, rescanFolders,
