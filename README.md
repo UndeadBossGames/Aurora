@@ -25,7 +25,7 @@ Updating works the same way: run the newer installer. Your profiles, playlists a
 | **Plays everything** | MP3, M4A, FLAC, WAV, OGG, Opus, MP4, WebM and MKV. Videos play in the Now Playing panel, in full screen (F11) or in a pop-out picture-in-picture window. |
 | **Library** | Favorites, playlists with custom covers, artist pages, search, sorting, a queue, shuffle and repeat. You can drag files or folders onto the window to import them. |
 | **Discover** | Search YouTube or SoundCloud from Home, preview a video inside Aurora, then download it as MP4 or MP3. |
-| **Friends** | Share your friend code, add friends, and see what they're listening to live. No account needed. |
+| **Friends** | Share your friend code, add friends, and see what they're listening to live. Open a friend's profile and library, and download any of their songs. No account needed. |
 | **Listen Together** | Host a session, share the code, and everyone hears the same song at the same second, with chat and reactions. Missing songs are fetched automatically. |
 | **Transfer songs** | Each profile has its own songs. Copy or move them to another profile, or share them with everyone. |
 | **iPhone** | [Aurora for iPhone](https://github.com/UndeadBossGames/Aurora-iOS) runs the same app on your phone (sideloaded, not the App Store). |

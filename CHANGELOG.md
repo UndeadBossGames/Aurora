@@ -2,6 +2,13 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.6.0 — 2026-10-28
+- **Friends' libraries**: open any friend's library from the Friends page (Library button), their profile card (Browse library) or the friend menu, and search, filter and scroll through every song they have
+- **Download any song from a friend** with one click, or **Download all**. Songs that came from YouTube/SoundCloud download from the source; anything else (local files, iPhone songs) is copied straight from your friend, with its title, artist, album and cover. Copies land in a "From friends" folder
+- Works between PC and iPhone in both directions
+- Privacy: only people on your friends list can see your library, only while Aurora is open, and you can turn it off with "Let friends browse and download my songs" on the Friends page
+- The last library you saw from each friend is remembered, so you can still browse it when they're offline
+
 ## v1.5.0 — 2026-10-28
 - **Songs belong to profiles**: new downloads and imports go to the profile that added them, so every profile has its own library. Songs from before 1.5 stay shared with everyone
 - **Transfer songs**: copy or move songs to another profile, or share them with every profile. Open it from your profile page, the Downloads page, or right-click a song → "Send to another profile…". Moving doesn't duplicate files
