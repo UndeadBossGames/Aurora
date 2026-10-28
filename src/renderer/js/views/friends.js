@@ -32,8 +32,10 @@ Views.friends = {
       card.innerHTML = `
         <h3>Your friend code</h3>
         <div class="fr-code"><span>${esc(code)}</span><button class="btn-outline sm fr-copy">${icon('paste', 14)} Copy</button></div>
-        <label class="dc-opt"><span>Share what I'm listening to<small>Friends who have your code can see your current song.</small></span><input type="checkbox" class="toggle fr-share" ${Friends.sharing() ? 'checked' : ''} /></label>`;
+        <label class="dc-opt"><span>Share what I'm listening to<small>Friends who have your code can see your current song.</small></span><input type="checkbox" class="toggle fr-share" ${Friends.sharing() ? 'checked' : ''} /></label>
+        <label class="dc-opt"><span>Let friends browse and download my songs<small>Only people on your friends list, and only while Aurora is open.</small></span><input type="checkbox" class="toggle fr-sharelib" ${FriendShare.sharing() ? 'checked' : ''} /></label>`;
       $('.fr-copy', card).onclick = async () => { try { await navigator.clipboard.writeText(code); UI.toast('Friend code copied'); } catch { UI.toast(code); } };
+      $('.fr-sharelib', card).onchange = (e) => { FriendShare.setSharing(e.target.checked); UI.toast(e.target.checked ? 'Friends can now browse your library' : 'Your library is now private'); };
       $('.fr-share', card).onchange = (e) => { Friends.setSharing(e.target.checked); UI.toast(e.target.checked ? 'Sharing your listening activity' : 'Your activity is now hidden'); };
     };
 
@@ -89,6 +91,7 @@ Views.friends = {
             ${p.together && p.status !== 'offline' ? `<button class="btn-accent sm fr-join">${icon('headphones', 14)} Join</button>` : ''}
             ${live && t ? `<button class="${p.together ? 'btn-outline' : 'btn-accent'} sm fr-find">${icon('search', 14)} Find it</button>` : ''}
             ${live && t && t.url ? `<button class="icon-btn small fr-open" title="Open on ${esc(t.source || 'web')}">${icon('external', 16)}</button>` : ''}
+            <button class="btn-outline sm fr-lib" title="Browse their songs">${icon('library', 14)} Library</button>
             <button class="icon-btn small fr-more" title="More">${icon('dotsH', 18)}</button>
           </div>
         </div>`);
@@ -96,6 +99,7 @@ Views.friends = {
         if (join) join.onclick = () => { try { ListenTogether.join(p.together); App.go('together'); } catch (e) { UI.toast(e.message); } };
         $('.fr-av', card).onclick = () => Views.profile.friendModal(f, p);
         $('.fr-name', card).onclick = () => Views.profile.friendModal(f, p);
+        $('.fr-lib', card).onclick = () => App.go('friendlib', f.code);
         const find = $('.fr-find', card);
         if (find) find.onclick = () => App.go('discover', `${t.artist && t.artist !== 'Unknown artist' ? t.artist + ' ' : ''}${t.title}`);
         const open = $('.fr-open', card);
@@ -104,6 +108,8 @@ Views.friends = {
           const r = e.currentTarget.getBoundingClientRect();
           UI.menu([
             { header: f.code },
+            { label: 'Browse library', icon: 'library', action: () => App.go('friendlib', f.code) },
+            { label: 'View profile', icon: 'user', action: () => Views.profile.friendModal(f, p) },
             { label: 'Rename', icon: 'edit', action: () => {
               const body = html(`<div class="form"><label>Nickname<input class="input" value="${esc(f.nickname || '')}" maxlength="40" /></label></div>`);
               UI.modal({ title: 'Rename friend', body, width: 420, actions: [{ label: 'Save', primary: true, action: () => Friends.renameFriend(f.code, $('input', body).value) }] });

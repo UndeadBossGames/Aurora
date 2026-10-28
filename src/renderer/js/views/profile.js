@@ -386,8 +386,9 @@ Object.assign(Views.profile, {
     const t = p.track;
     if (t && (p.status === 'listening' || p.status === 'paused')) body.appendChild(html(`<div class="pf-now">${icon('headphones', 16)} ${p.status === 'listening' ? 'Listening to' : 'Paused on'} <b>${esc(t.title)}</b> · ${esc(t.artist)}</div>`));
     const actions = [];
+    actions.push({ label: 'Browse library', primary: !p.together, action: () => { setTimeout(() => App.go('friendlib', f.code), 30); } });
     if (p.together) actions.push({ label: 'Listen together', primary: true, action: () => { ListenTogether.join(p.together); App.go('together'); } });
-    actions.push({ label: 'Close', primary: !p.together });
+    actions.push({ label: 'Close' });
     UI.modal({ title: f.nickname || p.name || 'Friend', body, width: 640, actions });
   },
 });
