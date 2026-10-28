@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const Store = require('./store');
 const media = require('./media');
+const lanshare = require('./lanshare');
 const { Downloader } = require('./downloader');
 const { Updater } = require('./updater');
 const { DiscordPresence, buildActivity, LOGO_URL } = require('./discord');
@@ -195,9 +196,11 @@ function registerIpc() {
     return out;
   });
   // Friend sharing: read a song's bytes to send to a friend, and save one a friend sent us.
+  ipcMain.handle('library:stat', (_e, file) => { const st = fs.statSync(file); return { size: st.size }; });
+  ipcMain.handle('lan:offer', (_e, file) => lanshare.offer(file));
   ipcMain.handle('library:readBytes', (_e, file) => {
     const st = fs.statSync(file);
-    if (st.size > 80 * 1024 * 1024) throw new Error('This file is too large to send (max 80 MB).');
+    if (st.size > 400 * 1024 * 1024) throw new Error('This file is too large to send over the internet (max 400 MB).');
     return new Uint8Array(fs.readFileSync(file));
   });
   ipcMain.handle('library:saveIncoming', (_e, { name, bytes, dir }) => {
@@ -222,6 +225,7 @@ function registerIpc() {
 
   // downloader
   ipcMain.handle('dl:add', (_e, opts) => downloader.add(opts));
+  ipcMain.handle('dl:setConcurrency', (_e, n) => { downloader.maxConcurrent = Math.max(1, Math.min(8, n | 0)); downloader.pump(); return downloader.maxConcurrent; });
   ipcMain.handle('dl:search', (_e, q, source, limit) => downloader.search(q, source, limit));
   ipcMain.handle('dl:list', () => downloader.list());
   ipcMain.handle('dl:cancel', (_e, id) => downloader.cancel(id));

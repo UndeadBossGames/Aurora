@@ -38,10 +38,12 @@ contextBridge.exposeInMainWorld('native', {
     saveCover: invoke('library:saveCover'),
     deleteFile: invoke('library:deleteFile'),
     readBytes: invoke('library:readBytes'),
+    stat: invoke('library:stat'),
     saveIncoming: invoke('library:saveIncoming'),
   },
   shell: { showItem: invoke('shell:showItem'), openPath: invoke('shell:openPath'), openExternal: invoke('shell:openExternal') },
   art: { lookup: invoke('art:lookup') },
+  lan: { offer: invoke('lan:offer') },
   discord: {
     configure: invoke('discord:configure'),
     status: invoke('discord:status'),
@@ -57,6 +59,7 @@ contextBridge.exposeInMainWorld('native', {
   },
   dl: {
     add: invoke('dl:add'),
+    setConcurrency: invoke('dl:setConcurrency'),
     search: invoke('dl:search'),
     list: invoke('dl:list'),
     cancel: invoke('dl:cancel'),
