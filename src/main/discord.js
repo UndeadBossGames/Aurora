@@ -178,6 +178,8 @@ class DiscordPresence extends EventEmitter {
   }
 }
 
+const pickHttps = (...urls) => urls.find((u) => u && /^https:\/\//.test(u) && u.length <= 300) || null;
+
 // Turn the renderer's "now playing" info into a Discord activity
 function buildActivity(np, opts = {}) {
   if (!np || !np.title) return null;
@@ -192,10 +194,12 @@ function buildActivity(np, opts = {}) {
     details: clip(np.title),
     state: clip(np.playing ? `by ${np.artist || 'Unknown artist'}` : `Paused · ${np.artist || 'Unknown artist'}`),
     assets: {
-      large_image: np.coverUrl && /^https:\/\//.test(np.coverUrl) ? np.coverUrl : LOGO_URL,
-      large_text: clip(np.album || 'Aurora'),
-      small_image: LOGO_URL,
-      small_text: 'Aurora',
+      // big picture: album cover (online lookup) -> the video/thumbnail it was downloaded with -> Aurora logo
+      large_image: pickHttps(np.albumArtUrl, np.coverUrl) || LOGO_URL,
+      large_text: clip(np.album || np.title || 'Aurora'),
+      // small bubble: a photo of the artist -> Aurora logo
+      small_image: pickHttps(np.artistImageUrl) || LOGO_URL,
+      small_text: clip(np.artistImageUrl ? (np.artist || 'Artist') : 'Aurora'),
     },
     instance: false,
   };
@@ -209,4 +213,4 @@ function buildActivity(np, opts = {}) {
   return a;
 }
 
-module.exports = { DiscordPresence, buildActivity };
+module.exports = { DiscordPresence, buildActivity, LOGO_URL };

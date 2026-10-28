@@ -2,6 +2,7 @@
 // which shows it on your Discord profile as "Listening to Aurora".
 const DiscordConn = (() => {
   let status = { state: 'off' };
+  let art = { album: null, artist: null, key: null };
   const listeners = [];
 
   const opts = () => {
@@ -12,6 +13,7 @@ const DiscordConn = (() => {
       showProgress: s.discordShowProgress !== false,
       showPaused: !!s.discordShowPaused,
       showButton: s.discordShowButton !== false,
+      lookupArt: s.discordLookupArt !== false,
     };
   };
 
@@ -35,7 +37,11 @@ const DiscordConn = (() => {
   const push = debounce(() => {
     const o = opts();
     if (!o.enabled) return;
-    native.discord.nowPlaying(nowPlaying(), o).catch(() => {});
+    const np = nowPlaying();
+    const key = np ? np.title + '|' + np.artist : null;
+    native.discord.nowPlaying(np, o).then((r) => {
+      if (r && r.art) art = { ...r.art, key };
+    }).catch(() => {});
   }, 600);
 
   async function apply() {
@@ -69,5 +75,11 @@ const DiscordConn = (() => {
     if (opts().enabled) apply();
   }
 
-  return { init, setEnabled, setOption, onChange, opts, nowPlaying, get status() { return status; } };
+  // artwork found for the current song (only valid if it matches what is playing)
+  function currentArt() {
+    const np = nowPlaying();
+    return np && art.key === np.title + '|' + np.artist ? art : { album: null, artist: null };
+  }
+
+  return { init, setEnabled, setOption, onChange, opts, nowPlaying, currentArt, get status() { return status; } };
 })();

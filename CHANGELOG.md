@@ -2,6 +2,10 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.2.1 — 2026-10-28
+- Discord Connection now shows the song's **album cover** as the main picture and a **photo of the artist** in the small bubble. Both are looked up online through Deezer's public catalogue and cached. You can turn this off on the Discord Connection page
+- If no match is found, it falls back to the downloaded thumbnail, then the Aurora logo
+
 ## v1.2.0 — 2026-10-28
 - **Discord Connection**: show what you're listening to on your Discord profile ("Listening to Aurora"), with song, artist, artwork, a live progress bar and an "Open on YouTube/SoundCloud" button. Open it from the avatar menu, Settings or Browse. It needs the Discord desktop app running on the same PC
 - New look: a deep-night palette, violet→teal "aurora" gradients, rounder shapes, a floating player dock, the Poppins display font, an Aurora logo in the title bar, and heart icons for favorites

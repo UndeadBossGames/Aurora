@@ -6,7 +6,8 @@ const Store = require('./store');
 const media = require('./media');
 const { Downloader } = require('./downloader');
 const { Updater } = require('./updater');
-const { DiscordPresence, buildActivity } = require('./discord');
+const { DiscordPresence, buildActivity, LOGO_URL } = require('./discord');
+const { Artwork } = require('./artwork');
 
 app.setName('Aurora');
 // Optional: AURORA_USER_DATA=<folder> (or a "data" folder next to Aurora.exe) = portable mode
@@ -33,6 +34,8 @@ let downloader = null;
 const updater = new Updater();
 updater.on('progress', (p) => send('update:progress', p));
 const presence = new DiscordPresence();
+let artwork = null; // created once the data store exists
+let npSeq = 0;
 presence.on('status', (s) => send('discord:status', s));
 const PKG = require(path.join(__dirname, '..', '..', 'package.json'));
 const DISCORD_CLIENT_ID = (PKG.aurora && PKG.aurora.discordClientId) || '';
@@ -101,6 +104,7 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   ensureCustomFiles();
   downloader = new Downloader({ binDir: BIN, coversDir: COVERS });
+  artwork = new Artwork(store);
   downloader.on('job', (j) => send('dl:job', j));
   downloader.on('file', (f) => send('dl:file', f));
   downloader.on('removed', (id) => send('dl:removed', id));
@@ -211,5 +215,15 @@ function registerIpc() {
   // Discord Connection
   ipcMain.handle('discord:configure', (_e, { enabled, clientId }) => presence.configure({ enabled, clientId: clientId || DISCORD_CLIENT_ID }));
   ipcMain.handle('discord:status', () => ({ ...presence.status(), defaultClientId: DISCORD_CLIENT_ID }));
-  ipcMain.handle('discord:nowPlaying', (_e, np, opts) => { presence.setActivity(buildActivity(np, opts)); return true; });
+  ipcMain.handle('discord:nowPlaying', async (_e, np, opts = {}) => {
+    const seq = ++npSeq;
+    let art = { album: null, artist: null };
+    if (np && np.title && opts.lookupArt !== false && artwork) {
+      art = await artwork.lookup(np.title, np.artist);
+      if (seq !== npSeq) return { art, logo: LOGO_URL }; // a newer song started meanwhile
+      np = { ...np, albumArtUrl: art.album, artistImageUrl: art.artist };
+    }
+    presence.setActivity(buildActivity(np, opts));
+    return { art, logo: LOGO_URL };
+  });
 }

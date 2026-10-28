@@ -22,6 +22,7 @@ Views.discord = {
       </div>
       <div class="dc-card dc-options" style="margin-bottom:32px">
         <h3>What to share</h3>
+        <label class="dc-opt"><span>Show album cover and artist photo<small>Looks up the album art and a photo of the artist online (via Deezer). The artist photo appears in the small bubble.</small></span><input type="checkbox" class="toggle" data-k="discordLookupArt"></label>
         <label class="dc-opt"><span>Show song progress<small>Displays elapsed and remaining time.</small></span><input type="checkbox" class="toggle" data-k="discordShowProgress"></label>
         <label class="dc-opt"><span>Keep showing while paused<small>Otherwise your status clears when you pause.</small></span><input type="checkbox" class="toggle" data-k="discordShowPaused"></label>
         <label class="dc-opt"><span>Show "Open on…" button<small>For downloaded songs, friends can open the original YouTube/SoundCloud page.</small></span><input type="checkbox" class="toggle" data-k="discordShowButton"></label>
@@ -35,7 +36,7 @@ Views.discord = {
     root.appendChild(el);
 
     const o = DiscordConn.opts();
-    const vals = { discordShowProgress: o.showProgress, discordShowPaused: o.showPaused, discordShowButton: o.showButton };
+    const vals = { discordLookupArt: o.lookupArt, discordShowProgress: o.showProgress, discordShowPaused: o.showPaused, discordShowButton: o.showButton };
     $$('.dc-options input[data-k]', el).forEach((cb) => {
       cb.checked = vals[cb.dataset.k];
       cb.onchange = () => { DiscordConn.setOption(cb.dataset.k, cb.checked); drawPreview(); };
@@ -78,11 +79,13 @@ Views.discord = {
         return;
       }
       const t = Player.current;
+      const art = o2.lookupArt ? DiscordConn.currentArt() : { album: null, artist: null };
+      const big = art.album || UI.coverSrc(t);
       const pct = np.duration ? Math.min(100, (np.position / np.duration) * 100) : 0;
       host.innerHTML = `<div class="dc-preview">
         <div class="dc-preview-label">Listening to Aurora</div>
         <div class="dc-preview-row">
-          <div class="dc-preview-art"><img class="big" src="${esc(UI.coverSrc(t))}" /><span class="small">${icon('aurora', 16)}</span></div>
+          <div class="dc-preview-art"><img class="big" src="${esc(big)}" /><span class="small" title="${art.artist ? esc(np.artist) : 'Aurora'}">${art.artist ? `<img src="${esc(art.artist)}" />` : icon('aurora', 16)}</span></div>
           <div class="dc-preview-text"><div class="t">${esc(np.title)}</div><div>${np.playing ? 'by ' : 'Paused · '}${esc(np.artist)}</div><div>${esc(np.album || 'Aurora')}</div></div>
         </div>
         ${np.playing && o2.showProgress && np.duration ? `<div class="dc-preview-bar"><span>${fmtTime(np.position)}</span><div class="track"><div style="width:${pct}%"></div></div><span>${fmtTime(np.duration)}</span></div>` : ''}

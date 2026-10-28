@@ -170,7 +170,8 @@ body {
 .dc-preview-row { display: flex; gap: 12px; align-items: center; }
 .dc-preview-art { position: relative; width: 72px; height: 72px; flex: none; }
 .dc-preview-art img.big { width: 72px; height: 72px; border-radius: 8px; object-fit: cover; }
-.dc-preview-art .small { position: absolute; right: -4px; bottom: -4px; width: 24px; height: 24px; border-radius: 50%; border: 3px solid #111214; background: #10121a; display: grid; place-items: center; }
+.dc-preview-art .small img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.dc-preview-art .small { position: absolute; right: -4px; bottom: -4px; width: 24px; height: 24px; border-radius: 50%; border: 3px solid #111214; background: #10121a; display: grid; place-items: center; overflow: hidden; }
 .dc-preview-text { min-width: 0; font-size: 13px; color: #dbdee1; line-height: 1.4; }
 .dc-preview-text .t { font-weight: 600; color: #f2f3f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dc-preview-text div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
