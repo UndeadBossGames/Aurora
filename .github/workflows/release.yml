@@ -1,0 +1,30 @@
+name: Build installer
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y nsis unzip
+      - name: Build Aurora-Setup.exe
+        run: bash scripts/build-win.sh
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aurora-Setup
+          path: dist/Aurora-Setup-*.exe
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Aurora-Setup-*.exe
+          generate_release_notes: true
