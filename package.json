@@ -1,7 +1,7 @@
 {
   "name": "aurora",
   "productName": "Aurora",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Aurora - a desktop music & video player with profiles and a built-in video downloader.",
   "main": "src/main/main.js",
   "author": "RJ",

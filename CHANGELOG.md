@@ -2,6 +2,10 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.1.0 — 2026-10-28
+- New **Check for updates** button at the top right of the window (also in Menu → Help). It checks GitHub Releases, shows what's new, then downloads and runs the new installer. Your data is kept
+- Aurora checks quietly on start-up and turns the button green when an update is available
+
 ## v1.0.0 — 2026-10-28
 First release.
 - Three-panel layout: Your Library, main view, Now Playing panel, player bar

@@ -165,6 +165,7 @@ const App = (() => {
       ] },
       { label: 'Help', sub: [
         { label: 'About Aurora', action: about },
+        { label: 'Check for updates…', action: () => Updates.onClick() },
         { label: "What's new", action: whatsNew },
         { label: 'Keyboard shortcuts', action: shortcuts },
         { divider: true },
@@ -882,6 +883,7 @@ const App = (() => {
     initKeys();
     initDragDrop();
     initDownloads();
+    Updates.init();
     State.on('library', () => { renderLibrary(); rerender(); });
     State.on('likes', () => { renderNowPlayingBar(); renderRightPanel(); });
     State.on('profiles', renderAvatar);

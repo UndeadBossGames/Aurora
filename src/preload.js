@@ -39,6 +39,11 @@ contextBridge.exposeInMainWorld('native', {
     deleteFile: invoke('library:deleteFile'),
   },
   shell: { showItem: invoke('shell:showItem'), openPath: invoke('shell:openPath'), openExternal: invoke('shell:openExternal') },
+  update: {
+    check: invoke('update:check'),
+    install: invoke('update:install'),
+    onProgress: on('update:progress'),
+  },
   dl: {
     add: invoke('dl:add'),
     list: invoke('dl:list'),

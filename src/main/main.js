@@ -5,6 +5,7 @@ const fs = require('fs');
 const Store = require('./store');
 const media = require('./media');
 const { Downloader } = require('./downloader');
+const { Updater } = require('./updater');
 
 app.setName('Aurora');
 // Optional: AURORA_USER_DATA=<folder> (or a "data" folder next to Aurora.exe) = portable mode
@@ -28,6 +29,8 @@ fs.mkdirSync(CUSTOM, { recursive: true });
 const store = new Store(DATA);
 let win = null;
 let downloader = null;
+const updater = new Updater();
+updater.on('progress', (p) => send('update:progress', p));
 
 function ensureCustomFiles() {
   const css = path.join(CUSTOM, 'user.css');
@@ -194,4 +197,8 @@ function registerIpc() {
   ipcMain.handle('dl:tools', () => downloader.tools());
   ipcMain.handle('dl:updateYtdlp', () => downloader.updateYtdlp());
   ipcMain.handle('dl:installFfmpeg', () => downloader.installFfmpeg());
+
+  // updates
+  ipcMain.handle('update:check', () => updater.check());
+  ipcMain.handle('update:install', () => updater.downloadAndInstall());
 }
