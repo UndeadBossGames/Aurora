@@ -60,8 +60,10 @@ VIAddVersionKey "LegalCopyright" "MIT License"
 !insertmacro MUI_LANGUAGE "English"
 
 Function .onInit
-  ; close a running copy so files can be replaced
+  ; close a running copy so files can be replaced (give an updating Aurora a moment to exit first)
+  Sleep 1200
   nsExec::Exec 'taskkill /IM "${EXE}" /F'
+  Sleep 300
 FunctionEnd
 
 Section "Aurora" SecMain
@@ -92,6 +94,13 @@ Section "Aurora" SecMain
   ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
   IntFmt $0 "0x%08X" $0
   WriteRegDWORD HKCU "${UNINST_KEY}" "EstimatedSize" "$0"
+
+  ; In-app updates run "Aurora-Setup.exe /S /RELAUNCH": reopen Aurora when the silent install finishes
+  ${GetParameters} $R0
+  ClearErrors
+  ${GetOptions} $R0 "/RELAUNCH" $R1
+  IfErrors +2 0
+    Exec '"$INSTDIR\${EXE}"'
 SectionEnd
 
 Section "Uninstall"

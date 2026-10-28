@@ -217,7 +217,9 @@ function registerIpc() {
 
   // updates
   ipcMain.handle('update:check', () => updater.check());
-  ipcMain.handle('update:install', () => updater.downloadAndInstall());
+  ipcMain.handle('update:download', () => updater.download());
+  ipcMain.handle('update:install', () => updater.install());
+  ipcMain.handle('update:state', () => ({ ready: updater.ready || null, info: updater.info || null, downloading: !!updater.downloading }));
 
   // Album / artist artwork lookup (shared by Discord and Friends)
   ipcMain.handle('art:lookup', (_e, title, artist) => (artwork ? artwork.lookup(title, artist) : { album: null, artist: null }));

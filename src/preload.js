@@ -48,7 +48,9 @@ contextBridge.exposeInMainWorld('native', {
   },
   update: {
     check: invoke('update:check'),
+    download: invoke('update:download'),
     install: invoke('update:install'),
+    state: invoke('update:state'),
     onProgress: on('update:progress'),
   },
   dl: {

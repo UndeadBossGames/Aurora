@@ -69,39 +69,54 @@ class Updater extends EventEmitter {
     return { latest: v, name: 'v' + v, notes: '', url: res.url, asset: { name, size: 0, url: `https://github.com/${OWNER_REPO}/releases/download/v${v}/${name}` } };
   }
 
-  async downloadAndInstall() {
+  // Step 1: download the new installer in the background (with progress events).
+  async download() {
+    if (this.ready && this.info && this.ready.version === this.info.latest && fs.existsSync(this.ready.path)) return this.ready;
     if (this.downloading) return this.downloading;
     if (!this.info) await this.check();
     const info = this.info;
-    if (!info.asset) {
-      shell.openExternal(info.url);
-      throw new Error('This release has no installer attached yet. The release page was opened in your browser.');
-    }
+    if (!info.newer) throw new Error('You already have the latest version.');
+    if (!info.asset) throw new Error('This release has no installer attached yet. Try again in a few minutes.');
     this.downloading = (async () => {
       const dest = path.join(app.getPath('temp'), info.asset.name);
+      const part = dest + '.part';
       const res = await net.fetch(info.asset.url, { headers: { 'User-Agent': UA } });
       if (!res.ok) throw new Error(`Download failed (HTTP ${res.status})`);
       const total = Number(res.headers.get('content-length')) || info.asset.size || 0;
-      const out = fs.createWriteStream(dest);
+      const out = fs.createWriteStream(part);
       const reader = res.body.getReader();
       let got = 0, last = 0;
+      this.emit('progress', { phase: 'download', got, total, ratio: 0 });
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
         got += value.length;
         if (!out.write(Buffer.from(value))) await new Promise((r) => out.once('drain', r));
-        if (Date.now() - last > 150) { last = Date.now(); this.emit('progress', { got, total, ratio: total ? got / total : 0 }); }
+        if (Date.now() - last > 150) { last = Date.now(); this.emit('progress', { phase: 'download', got, total, ratio: total ? got / total : 0 }); }
       }
       await new Promise((r, j) => out.end((e) => (e ? j(e) : r())));
-      this.emit('progress', { got, total, ratio: 1, done: true });
-      if (process.platform !== 'win32') { shell.showItemInFolder(dest); return { path: dest, launched: false }; }
-      // Start the installer on its own and close Aurora so the files can be replaced.
-      spawn(dest, [], { detached: true, stdio: 'ignore' }).unref();
-      setTimeout(() => app.quit(), 600);
-      return { path: dest, launched: true };
+      if (total && got < total) throw new Error('The download was interrupted. Please try again.');
+      fs.renameSync(part, dest);
+      this.ready = { path: dest, version: info.latest };
+      this.emit('progress', { phase: 'ready', got, total, ratio: 1, version: info.latest });
+      return this.ready;
     })().finally(() => { this.downloading = null; });
     return this.downloading;
   }
+
+  // Step 2: install silently in the background, then reopen Aurora on the new version.
+  async install() {
+    const r = await this.download();
+    this.emit('progress', { phase: 'installing', ratio: 1 });
+    if (process.platform !== 'win32') { shell.showItemInFolder(r.path); return { path: r.path, launched: false }; }
+    // /S = silent (no wizard), /RELAUNCH = start Aurora again when done (see build/installer.nsi)
+    spawn(r.path, ['/S', '/RELAUNCH'], { detached: true, stdio: 'ignore' }).unref();
+    setTimeout(() => app.quit(), 800);
+    return { path: r.path, launched: true };
+  }
+
+  // kept for older UI code
+  downloadAndInstall() { return this.install(); }
 }
 
 module.exports = { Updater, isNewer };
