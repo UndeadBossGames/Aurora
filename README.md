@@ -27,6 +27,7 @@ Updating works the same way: run the newer installer. Your profiles, playlists a
 | **Discover** | Search YouTube or SoundCloud from Home, preview a video inside Aurora, then download it as MP4 or MP3. |
 | **Friends** | Share your friend code, add friends, and see what they're listening to live. Open a friend's profile and library, and download any of their songs. No account needed. |
 | **Listen Together** | Host a session, share the code, and everyone hears the same song at the same second, with chat and reactions. Missing songs are fetched automatically. |
+| **Aurora Account** | Sign in with the same account on your PC and iPhone to share your profile, Favorites, playlists and look, and download any song that's on your other device. End-to-end encrypted, no server. |
 | **Transfer songs** | Each profile has its own songs. Copy or move them to another profile, or share them with everyone. |
 | **iPhone** | [Aurora for iPhone](https://github.com/UndeadBossGames/Aurora-iOS) runs the same app on your phone (sideloaded, not the App Store). |
 | **Your profile** | Bio, pronouns, status, banner, profile effects, and your favorite song, album and artist. |

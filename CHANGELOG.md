@@ -2,6 +2,13 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.8.0 — 2026-10-29
+- **Aurora Account**: sign in with an account name and password (Search → Aurora Account, or the button on your profile). Use the same one on your PC and iPhone and your profile (name, photo, bio, status, banner, favorites), Favorites, playlists and Store look stay the same on both
+- **Songs on your other devices**: the Account page lists every song that's on another of your devices but not this one. Download one or all of them, or turn on automatic downloads. Songs are copied straight from your other device (at full Wi-Fi speed on the same network), or downloaded again from YouTube/SoundCloud when that device is off
+- Your own devices can always copy songs from each other, even with library sharing for friends turned off
+- **End-to-end encrypted**: everything is locked with a key made from your name and password (PBKDF2, 210,000 rounds, then AES-256-GCM) before it leaves the device. The password itself is never stored or sent. There's no password reset, so keep it safe
+- Requests between your devices are signed, so nobody else can pose as one of them
+
 ## v1.7.0 — 2026-10-28
 - **Faster downloads**: 4 downloads at once (was 2), each one fetched in 4 parallel pieces, and playlists are split into separate downloads so their videos download side by side instead of one after another
 - **Listen Together**: if you don't have the host's song and it has no YouTube/SoundCloud link (a local file, say), Aurora now copies it straight from the host and starts in sync. iPhones always do this first
