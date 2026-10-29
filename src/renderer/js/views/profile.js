@@ -18,6 +18,9 @@ Views.profile = {
       const tr = html(`<button class="btn-outline">${icon('transfer', 16)} Transfer songs</button>`);
       tr.onclick = () => Views.transfer.open();
       $('.ab-left', bar).appendChild(tr);
+      const ac = html(`<button class="btn-outline">${icon('cloud', 16)} ${typeof Account !== 'undefined' && Account.signedIn() ? 'Aurora Account' : 'Sign in to sync'}</button>`);
+      ac.onclick = () => App.go('account');
+      $('.ab-left', bar).appendChild(ac);
     }
     if (!isActive) {
       const sw = html(`<button class="btn-outline">Switch to ${esc(p.name)}</button>`);

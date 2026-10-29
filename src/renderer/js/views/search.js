@@ -96,6 +96,7 @@ function browse(root) {
     { name: 'Friends', color: '#148a8a', view: 'friends', img: genCover('friends-tile', '', 'users') },
     { name: 'Aurora Store', color: '#e1641e', view: 'store', img: genCover('store-tile', '', 'bag') },
     { name: 'Discord Connection', color: '#5865f2', view: 'discord', img: genCover('discord-tile', '', 'discord') },
+    { name: 'Aurora Account', color: '#0f8f7e', view: 'account', img: genCover('account-tile', '', 'cloud') },
     { name: 'Your Profile', color: '#1e3264', view: 'profile', img: genCover('profile-tile', '', 'user') },
     { name: 'Settings', color: '#535353', view: 'settings', img: genCover('settings-tile', '', 'settings') },
   ];
