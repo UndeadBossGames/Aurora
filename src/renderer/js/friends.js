@@ -8,6 +8,8 @@ const Friends = (() => {
   const NS = 'aurora-player/v1/u/';
   const DM = 'aurora-player/v1/dm/'; // private inbox per friend code (library sharing)
   const dmListeners = [];
+  const rawSubs = new Map(); // topic filter -> handler (Aurora Account uses these)
+  const topicMatch = (f, t) => { const a = f.split('/'), b = t.split('/'); for (let i = 0; i < a.length; i++) { if (a[i] === '#') return true; if (a[i] !== '+' && a[i] !== b[i]) return false; } return a.length === b.length; };
   let client = null;
   let state = 'off';
   const presence = new Map(); // code -> payload
@@ -96,8 +98,9 @@ const Friends = (() => {
       urls: window.AURORA_BROKER ? [window.AURORA_BROKER] : BROKERS,
       clientId: 'aurora-' + normCode(code).toLowerCase() + '-' + Math.random().toString(36).slice(2, 7),
       will: sharing() ? { topic: topic(code), payload: JSON.stringify({ v: 1, name, status: 'offline', ts: Date.now() }), retain: true } : null,
-      onState: (s) => { state = s; if (s === 'connected') { lastPayload = ''; publish(true); } emit(); },
+      onState: (s) => { state = s; if (s === 'connected') { lastPayload = ''; publish(true); connectListeners.forEach((f) => { try { f(); } catch {} }); } emit(); },
       onMessage: (t, payload) => {
+        for (const [f, fn] of rawSubs) if (topicMatch(f, t)) { try { fn(t, payload); } catch (e) { console.warn(e); } return; }
         if (t.startsWith(DM)) {
           let m; try { m = JSON.parse(payload); } catch { return; }
           if (m && m.from) dmListeners.forEach((f) => { try { f(m); } catch (e) { console.warn(e); } });
@@ -111,13 +114,16 @@ const Friends = (() => {
     });
     for (const f of friends()) client.subscribe(topic(f.code));
     client.subscribe(dmTopic(code));
+    for (const f of rawSubs.keys()) client.subscribe(f);
     client.connect();
     heartbeat = setInterval(() => publish(true), 60000);
   }
 
+  const stopListeners = [];
   function stop() {
     clearInterval(heartbeat);
     if (client) {
+      if (client.connected) stopListeners.forEach((f) => { try { f(); } catch {} });
       try { if (sharing() && client.connected) client.publish(topic(myCode()), JSON.stringify({ v: 1, name: (State.activeProfile() || {}).name, status: 'offline', ts: Date.now() }), { retain: true }); } catch {}
       client.close();
     }
@@ -172,6 +178,17 @@ const Friends = (() => {
   const isFriend = (code) => friends().some((f) => normCode(f.code) === normCode(code));
   const friendByCode = (code) => friends().find((f) => normCode(f.code) === normCode(code)) || null;
   const onDM = (fn) => { dmListeners.push(fn); return () => dmListeners.splice(dmListeners.indexOf(fn), 1); };
+  // raw topics (encrypted by the caller)
+  const connectListeners = [];
+  function listen(filter, fn) {
+    rawSubs.set(filter, fn);
+    if (client) client.subscribe(filter);
+    return () => { rawSubs.delete(filter); if (client) client.unsubscribe(filter); };
+  }
+  function publishRaw(topicName, payload, opts = {}) { if (client) client.publish(topicName, payload, opts); return !!(client && client.connected); }
+  const onStop = (fn) => { stopListeners.push(fn); };
+  const onConnect = (fn) => { connectListeners.push(fn); return () => connectListeners.splice(connectListeners.indexOf(fn), 1); };
+
   function send(code, msg) {
     if (!client) return false;
     client.publish(dmTopic(code), JSON.stringify({ ...msg, from: myCode(), fromName: (State.activeProfile() || {}).name || 'Aurora user' }));
@@ -191,5 +208,5 @@ const Friends = (() => {
     setInterval(emit, 30000); // refresh "x min ago" labels and offline detection
   }
 
-  return { init, onChange, myCode, isFriend, friendByCode, onDM, send, normCode, friends, addFriend, removeFriend, renameFriend, statusOf, sharing, setSharing, listeningCount, prettyCode, get state() { return state; }, restart: start };
+  return { init, listen, publishRaw, onConnect, onStop, get connected() { return state === 'connected'; }, onChange, myCode, isFriend, friendByCode, onDM, send, normCode, friends, addFriend, removeFriend, renameFriend, statusOf, sharing, setSharing, listeningCount, prettyCode, get state() { return state; }, restart: start };
 })();
