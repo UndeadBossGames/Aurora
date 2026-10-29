@@ -89,7 +89,10 @@ const FriendShare = (() => {
   function request(code, item, opts = {}) {
     const id = rid();
     incoming.set(id, { code: nc(code), itemId: item.id, item, chunks: [], have: 0, total: null, meta: null, last: Date.now(), resends: 0, ...opts });
-    Friends.send(code, { t: 'get', rid: id, id: item.id, lt: opts.lt || undefined });
+    const msg = { t: 'get', rid: id, id: item.id, lt: opts.lt || undefined };
+    // your own devices (same Aurora Account) prove it with a signature only your account can make
+    if (opts.acct && typeof Account !== 'undefined' && Account.signedIn()) Account.sign(id + '|' + item.id + '|' + nc(Friends.myCode())).then((sig) => Friends.send(code, { ...msg, acct: sig })).catch(() => Friends.send(code, msg));
+    else Friends.send(code, msg);
     watch(id);
     return id;
   }
@@ -98,25 +101,36 @@ const FriendShare = (() => {
   function job(code, id) { return jobs.get(jobKey(code, id)) || null; }
   function setJob(code, id, patch) { const k = jobKey(code, id); jobs.set(k, { ...(jobs.get(k) || {}), ...patch }); emit(); }
 
-  // Friend's library page: download one song
-  async function download(code, item) {
+  // Friend's library page (or your Aurora Account): download one song.
+  // opts.prefer: 'copy' = copy the file from that device, 'source' = download it again from YouTube/SoundCloud…
+  // opts.acct: the other device is yours (same Aurora Account)
+  async function download(code, item, opts = {}) {
     const j = job(code, item.id);
     if (j && ['requesting', 'receiving', 'saving', 'source'].includes(j.status)) return;
     if (haveLocal(item)) { setJob(code, item.id, { status: 'done', progress: 1 }); return; }
-    // PC: songs from YouTube/SoundCloud etc. download straight from the source
-    if (!isPhone() && item.url) {
+    // songs from YouTube/SoundCloud etc. can download straight from the source (PC by default; iPhone when asked)
+    const fromSource = opts.prefer === 'source' || (!opts.prefer && !isPhone());
+    if (fromSource && item.url && native.dl && native.dl.add) {
       try {
         const fmt = item.kind === 'video' ? 'video-best' : 'audio-mp3';
         const list = await native.dl.add({ url: item.url, format: fmt, dir: State.settings().downloadDir, playlist: false, addToLibrary: true });
         setJob(code, item.id, { status: 'source', progress: 0, dlJob: list[0] && list[0].id, error: null });
         return;
-      } catch { /* fall back to copying it from the friend */ }
+      } catch (e) {
+        if (opts.prefer === 'source' && opts.noCopy) { setJob(code, item.id, { status: 'error', error: clean(e) }); return; }
+        /* fall back to copying it from the other device */
+      }
     }
     const r = request(code, item, {
+      acct: opts.acct,
       onProgress: (p) => { const cur = job(code, item.id); if (!cur || Math.abs((cur.progress || 0) - p) > 0.015 || p >= 1) setJob(code, item.id, { status: 'receiving', progress: p }); },
       onSaving: () => setJob(code, item.id, { status: 'saving', progress: 1 }),
       onDone: () => setJob(code, item.id, { status: 'done', progress: 1 }),
-      onError: (msg) => setJob(code, item.id, { status: 'error', error: msg }),
+      onError: (msg) => {
+        // copying failed but the song has a source link: download it from there instead
+        if (opts.prefer === 'copy' && item.url && native.dl && native.dl.add) { jobs.delete(jobKey(code, item.id)); download(code, item, { ...opts, prefer: 'source', noCopy: true }); return; }
+        setJob(code, item.id, { status: 'error', error: msg });
+      },
     });
     setJob(code, item.id, { status: 'requesting', progress: 0, rid: r, error: null });
   }
@@ -129,15 +143,16 @@ const FriendShare = (() => {
     emit();
   }
   // Download all: several at once (the relay is shared, so not unlimited), source downloads queue in the downloader
-  async function downloadAll(code, items) {
+  async function downloadAll(code, items, opts = {}) {
     const todo = items.filter((it) => !haveLocal(it));
-    const PAR = isPhone() ? 4 : 3;
+    const PAR = opts.acct ? 6 : isPhone() ? 4 : 3;
     let i = 0;
     const worker = async () => {
       while (i < todo.length) {
         const it = todo[i++];
-        await download(code, it);
-        if (isPhone() || !it.url) await new Promise((res) => {
+        await download(code, it, opts);
+        const j0 = job(code, it.id);
+        if (!(j0 && j0.status === 'source')) await new Promise((res) => {
           const done = () => { const j = job(code, it.id); return !j || ['done', 'error'].includes(j.status); };
           if (done()) return res();
           const off = onChange(() => { if (done()) { off(); res(); } });
@@ -270,6 +285,7 @@ const FriendShare = (() => {
   }
 
   function allowed(m) {
+    if (m.acctOk) return 'account';
     if (m.lt && typeof ListenTogether !== 'undefined' && ListenTogether.allowsFile(m.lt, m.from, m.id)) return 'lt';
     if (typeof PCLink !== 'undefined' && PCLink.isLinkedDevice(m.from)) return 'link';
     if (Friends.isFriend(m.from)) return sharing() ? 'friend' : 'off';
@@ -277,6 +293,12 @@ const FriendShare = (() => {
   }
   async function serve(m) {
     const reply = (msg) => Friends.send(m.from, { ...msg, rid: m.rid });
+    // one of your own devices (signed with your Aurora Account): always allowed, even with sharing off
+    m.acctOk = false; // never trust a flag sent in the message itself
+    // (the signature covers the request id, the song and the asker's code, so it can't be reused by anyone else)
+    if (m.acct && typeof Account !== 'undefined' && Account.signedIn()) {
+      try { m.acctOk = await Account.verify((m.rid || '') + '|' + (m.id || '') + '|' + nc(m.from), m.acct); } catch { m.acctOk = false; }
+    }
     const who2 = allowed(m);
     if (!who2) return reply({ t: 'err', msg: "You're not on their friends list yet. Ask them to add your friend code." });
     if (who2 === 'off') return reply({ t: 'err', msg: 'They turned off library sharing.', off: true });
@@ -288,7 +310,7 @@ const FriendShare = (() => {
     }
     if (m.t === 'get') {
       const t = State.track(m.id) || State.anyTrack(m.id);
-      if (!t || (who2 === 'friend' && !State.track(m.id))) return reply({ t: 'err', msg: "That song isn't in their library anymore." });
+      if (!t || ((who2 === 'friend' || who2 === 'account') && !State.track(m.id))) return reply({ t: 'err', msg: "That song isn't in their library anymore." });
       if (outgoing.size >= MAX_SENDS) return reply({ t: 'err', msg: `${(State.activeProfile() || {}).name || 'Your friend'} is busy sending other songs. Try again in a minute.` });
       startSend(m.from, m.rid, t);
     }
