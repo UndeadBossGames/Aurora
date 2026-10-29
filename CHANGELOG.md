@@ -2,6 +2,13 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.7.0 — 2026-10-28
+- **Faster downloads**: 4 downloads at once (was 2), each one fetched in 4 parallel pieces, and playlists are split into separate downloads so their videos download side by side instead of one after another
+- **Listen Together**: if you don't have the host's song and it has no YouTube/SoundCloud link (a local file, say), Aurora now copies it straight from the host and starts in sync. iPhones always do this first
+- **Wi-Fi fast path**: when an iPhone on the same Wi-Fi gets a song from this PC (friends' libraries or Listen Together), it downloads it directly at full network speed instead of through the internet relay. Windows may ask once to let Aurora use your private network: click Allow
+- Song copies through the relay send more at once and no longer load the whole file before starting; files up to 400 MB (no limit over Wi-Fi)
+- Aurora for iPhone 1.2 can now download from links by itself: see [Aurora-iOS](https://github.com/UndeadBossGames/Aurora-iOS)
+
 ## v1.6.0 — 2026-10-28
 - **Friends' libraries**: open any friend's library from the Friends page (Library button), their profile card (Browse library) or the friend menu, and search, filter and scroll through every song they have
 - **Download any song from a friend** with one click, or **Download all**. Songs that came from YouTube/SoundCloud download from the source; anything else (local files, iPhone songs) is copied straight from your friend, with its title, artist, album and cover. Copies land in a "From friends" folder
