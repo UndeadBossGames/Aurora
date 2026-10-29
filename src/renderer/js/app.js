@@ -958,7 +958,7 @@ const App = (() => {
     DiscordConn.init();
     Store.init();
     Friends.init();
-    FriendShare.init();
+    FriendShare.init(); Account.init();
     ListenTogether.init();
     Friends.onChange(updateHubDot);
     Updates.onChange(updateHubDot);
