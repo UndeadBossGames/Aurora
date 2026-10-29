@@ -713,7 +713,7 @@ body {
 @keyframes ac-glow { 50% { box-shadow: 0 18px 54px rgba(45,226,201,.35); } }
 .ac-title { font-size: clamp(30px, 4vw, 52px); overflow-wrap: anywhere; line-height: 1.05; }
 .ac-status .fl-on { display: inline-flex; align-items: center; gap: 4px; }
-.ac-you { font-size: 10px; font-weight: 800; letter-spacing: .06em; color: #04201c; background: #2dd4bf; border-radius: 4px; padding: 1px 5px; }
+.ac-dev-t .ac-you, .ac-you { font-size: 10px; font-weight: 800; letter-spacing: .06em; color: #04201c; background: #2dd4bf; border-radius: 4px; padding: 1px 5px; }
 .ac-lead { max-width: 640px; color: var(--text-sub); font-size: 15px; line-height: 1.5; margin: 10px 0 0; }
 .ac-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
 .ac-card { background: var(--bg-elevated, rgba(255,255,255,.04)); border: 1px solid rgba(255,255,255,.07); border-radius: 16px; padding: 18px 20px; }
