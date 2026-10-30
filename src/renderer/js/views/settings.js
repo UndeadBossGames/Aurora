@@ -24,6 +24,7 @@ Views.settings = {
         <div class="set-row"><div><b>${icon('bag', 18)} Aurora Store</b><span>Themes, fonts, player styles and effects in one place.</span></div><button class="btn-accent sm s-store">Open Store</button></div>
         <div class="set-row"><div><b>Accent colour</b><span>Used for play buttons, toggles and highlights.</span></div><div class="accent-row">${ACCENTS.map((c) => `<button class="swatch ${pr.accent === c ? 'on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('')}<label class="swatch custom" title="Custom colour"><input type="color" value="${esc(pr.accent || '#1ed760')}" /></label></div></div>
         <div class="set-row"><div><b>Show the Now Playing panel</b><span>Display the right-hand panel with artwork and video.</span></div><input type="checkbox" class="toggle s-rp" ${pr.showRightPanel ? 'checked' : ''}/></div>
+        ${document.body.classList.contains('is-ios') ? `<div class="set-row"><div><b>iPhone layout</b><span>Standard: tab bar with Home, Search, Your Library, Store and Create. Classic: the original Aurora phone layout.</span></div><div class="dl-select"><select class="s-layout"><option value="standard" ${(s.iosLayout || 'standard') === 'standard' ? 'selected' : ''}>Standard</option><option value="classic" ${s.iosLayout === 'classic' ? 'selected' : ''}>Classic</option></select><span data-icon="chevronDown" data-icon-size="16"></span></div></div>` : ''}
         <div class="set-row"><div><b>Show "Featured" card on Home</b></div><input type="checkbox" class="toggle s-hero" ${!pr.heroHidden ? 'checked' : ''}/></div>
         <div class="set-row col"><div><b>Custom CSS</b><span>Change anything about how Aurora looks. Applied instantly and saved with the app. Try <code>:root { --bg-elevated: #1a1a2e; }</code></span></div>
           <textarea class="input code s-css" spellcheck="false" placeholder="/* your CSS here */">${esc(s.customCss || '')}</textarea>
@@ -73,6 +74,7 @@ Views.settings = {
     q('.accent-row input[type=color]').oninput = (e) => setAccent(e.target.value);
     q('.s-rp').onchange = (e) => { State.setPref('showRightPanel', e.target.checked); App.applyTheme(); App.renderRightPanel(); };
     q('.s-hero').onchange = (e) => State.setPref('heroHidden', !e.target.checked);
+    if (q('.s-layout')) q('.s-layout').onchange = (e) => { State.setSetting('iosLayout', e.target.value); UI.toast('Switching layout…'); setTimeout(() => location.reload(), 1200); };
     q('.s-css').addEventListener('input', debounce((e) => { State.setSetting('customCss', e.target.value); App.applyTheme(); }, 250));
     q('.s-css-folder').onclick = () => native.shell.openPath(info.customDir);
     q('.s-reload').onclick = () => native.app.reload();
