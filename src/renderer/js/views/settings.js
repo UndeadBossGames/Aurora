@@ -43,6 +43,8 @@ Views.settings = {
         <div class="set-row"><div><b>Download location</b><span class="s-dldir">${esc(s.downloadDir)}</span></div><div class="set-actions"><button class="btn-outline sm s-dlchange">Change</button><button class="btn-outline sm s-dlopen">Open</button></div></div>
         <div class="set-row"><div><b>Default format</b></div><div class="dl-select"><select class="s-fmt">${[['video-best', 'Video · Best (MP4)'], ['video-1080', 'Video · 1080p'], ['video-720', 'Video · 720p'], ['audio-mp3', 'Audio · MP3'], ['audio-m4a', 'Audio · M4A']].map(([k, l]) => `<option value="${k}" ${s.dlFormat === k ? 'selected' : ''}>${l}</option>`).join('')}</select><span data-icon="chevronDown" data-icon-size="16"></span></div></div>
         <div class="set-row"><div><b>Add downloads to Library</b></div><input type="checkbox" class="toggle s-dllib" ${s.dlAddToLibrary ? 'checked' : ''}/></div>
+        ${native.dl && native.dl.trim ? `<div class="set-row"><div><b>Cut silent endings</b><span>When a download keeps going after the music stops, cut it where the sound ends.</span></div><input type="checkbox" class="toggle s-trim" ${s.trimSilence !== false ? 'checked' : ''}/></div>
+        <div class="set-row"><div><b>Fix songs already downloaded</b><span class="s-trim-status">Check every song and video in your library for a silent ending and cut it.</span></div><button class="btn-outline sm s-trim-all">Fix now</button></div>` : ''}
       </section>
 
       <section><h2>Advanced</h2>
@@ -91,6 +93,31 @@ Views.settings = {
     q('.s-dlopen').onclick = () => native.shell.openPath(State.settings().downloadDir);
     q('.s-fmt').onchange = (e) => State.setSetting('dlFormat', e.target.value);
     q('.s-dllib').onchange = (e) => State.setSetting('dlAddToLibrary', e.target.checked);
+    if (q('.s-trim')) {
+      q('.s-trim').onchange = (e) => State.setSetting('trimSilence', e.target.checked);
+      q('.s-trim-all').onclick = async (e) => {
+        const btn = e.currentTarget, status = q('.s-trim-status');
+        const list = State.allTracks().filter((t) => t.path && !t.trimChecked);
+        if (!list.length) return UI.toast('Every song has already been checked');
+        btn.disabled = true;
+        let fixed = 0, saved = 0;
+        for (let i = 0; i < list.length; i++) {
+          const t = list[i];
+          status.textContent = `Checking ${i + 1} of ${list.length}: ${t.title}`;
+          try {
+            const r = await native.dl.trim(t);
+            if (r && r.ok) {
+              const patch = { trimChecked: true };
+              if (r.trimmed) { saved += Math.max(0, (t.duration || r.duration) - r.duration); patch.duration = r.duration; patch.size = r.size; fixed++; }
+              else if (r.end < r.duration - 1.5) { patch.end = r.end; saved += r.duration - r.end; fixed++; }
+              State.updateTrack(t.id, patch);
+            }
+          } catch {}
+        }
+        btn.disabled = false;
+        status.textContent = fixed ? `Cut the silent ending off ${fixed} item${fixed === 1 ? '' : 's'} (${fmtTime(saved)} of silence removed).` : 'No silent endings found.';
+      };
+    }
 
     q('.s-dev').onclick = () => native.app.devtools();
     q('.s-data').onclick = () => native.shell.openPath(info.userData);
