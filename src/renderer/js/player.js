@@ -190,6 +190,9 @@ const Player = (() => {
   media.addEventListener('pause', () => emit('state'));
   media.addEventListener('ended', () => next(true));
   media.addEventListener('timeupdate', () => {
+    // songs with a silent ending that couldn't be cut from the file: move on where the sound stops
+    const ct = P.current && State.track(P.current);
+    if (ct && ct.end > 0 && !media.paused && media.currentTime >= ct.end && (!isFinite(media.duration) || ct.end < media.duration - 0.5)) { next(true); return; }
     emit('time');
     if (Date.now() - lastSave > 5000 && P.current) {
       lastSave = Date.now();
