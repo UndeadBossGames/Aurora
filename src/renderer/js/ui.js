@@ -233,7 +233,11 @@ const UI = (() => {
       };
       row.addEventListener('dblclick', play);
       $('.tl-play', row).addEventListener('click', (e) => { e.stopPropagation(); play(); });
-      row.addEventListener('click', () => { $$('.tl-row.selected', body).forEach((r) => r.classList.remove('selected')); row.classList.add('selected'); });
+      // touch screens (iPhone, tablets): one tap plays, like in the big streaming apps; mouse: click selects, double-click plays
+      row.addEventListener('click', (e) => {
+        $$('.tl-row.selected', body).forEach((r) => r.classList.remove('selected')); row.classList.add('selected');
+        if (TOUCH() && !e.target.closest('button, a')) play();
+      });
       row.addEventListener('keydown', (e) => { if (e.key === 'Enter') play(); });
       row.addEventListener('contextmenu', (e) => { e.preventDefault(); trackMenu(t, e.clientX, e.clientY, { playlistId }); });
       $('.tl-more', row).addEventListener('click', (e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); trackMenu(t, r.right, r.bottom, { playlistId }); });
@@ -244,6 +248,8 @@ const UI = (() => {
     markPlaying(wrap);
     return wrap;
   }
+
+  const TOUCH = () => document.body.classList.contains('mobile') || (window.matchMedia && matchMedia('(hover: none) and (pointer: coarse)').matches);
 
   function markPlaying(root = document) {
     const cur = Player.P.current;
