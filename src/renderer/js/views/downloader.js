@@ -151,7 +151,7 @@ function dlUpdateRow(j, append = false) {
     <div class="dl-thumb ${j.format.startsWith('video') ? 'wide' : ''}"><img src="${esc(thumb)}" onerror="this.src='${genCover(j.id)}'" /></div>
     <div class="dl-info">
       <div class="dl-title" title="${esc(j.title)}">${esc(j.title)}</div>
-      <div class="dl-meta"><span class="src-chip sm">${esc(j.source)}</span><span>${esc({ 'video-best': 'MP4 · Best', 'video-1080': 'MP4 · 1080p', 'video-720': 'MP4 · 720p', 'audio-mp3': 'MP3', 'audio-m4a': 'M4A' }[j.format] || j.format)}</span><span class="dl-status ${j.status}">${esc(statusText)}</span></div>
+      <div class="dl-meta"><span class="src-chip sm">${esc(j.source)}</span><span class="dl-type ${String(j.format).startsWith('audio') ? 'song' : 'video'}">${esc(dlTypeLabel(j))}</span><span class="dl-status ${j.status}">${esc(statusText)}</span></div>
       ${['downloading', 'queued', 'preparing'].includes(j.status) ? `<div class="dl-bar"><div style="width:${j.progress || 0}%"></div></div>` : ''}
     </div>
     <div class="dl-actions">
@@ -210,3 +210,12 @@ function dlRenderTools() {
 
 // keep the badge alive even when the tab isn't open
 document.addEventListener('DOMContentLoaded', () => setTimeout(dlBind, 500));
+
+// "Song · .mp3" / "Video · .mp4": what the download will be (the real file type once it's saved)
+function dlTypeLabel(j) {
+  const ios = window.native && native.platform === 'ios';
+  const f = (j.files || []).map((x) => (x && (x.path || x)) || '').find(Boolean);
+  const ext = f ? String(f).split('.').pop().toLowerCase() : ({ 'audio-mp3': ios ? 'm4a' : 'mp3', 'audio-m4a': 'm4a' }[j.format] || 'mp4');
+  const q = { 'video-1080': ' · 1080p', 'video-720': ' · 720p' }[j.format] || '';
+  return `${['mp3', 'm4a', 'aac', 'opus', 'ogg', 'wav', 'flac'].includes(ext) ? 'Song' : 'Video'} · .${ext}${q}`;
+}
