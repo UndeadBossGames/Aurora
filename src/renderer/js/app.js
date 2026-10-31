@@ -42,12 +42,40 @@ const App = (() => {
     markLibraryActive();
   }
 
-  const rerender = debounce(() => {
+  // Automatic refreshes (a song was added, a like changed…) build the new page off-screen, wait for its
+  // pictures to be ready, then swap it in one go. Rebuilding in place made the whole page blink.
+  const QUIET_VIEWS = ['settings', 'store', 'downloader', 'discover', 'identify', 'together', 'account', 'friends', 'discord', 'transfer'];
+  let softSeq = 0;
+  async function softRender() {
     if (!current) return;
+    const at = current, seq = ++softSeq;
+    const v = Views[at.view];
+    if (!v) return;
+    const scroller = $('#main-scroll');
+    const view = $('#view');
+    const next = document.createElement('div');
+    let r;
+    try { r = v.render(next, at.param); } catch (e) { console.error(e); return render(false); }
+    hydrateIcons(next);
+    // decode the pictures first (at most a short moment) so nothing flashes empty
+    const imgs = [...next.querySelectorAll('img')].slice(0, 60);
+    await Promise.race([Promise.all(imgs.map((i) => (i.decode ? i.decode().catch(() => {}) : null))), new Promise((res) => setTimeout(res, 180))]);
+    if (seq !== softSeq || current !== at) { if (typeof r === 'function') { try { r(); } catch {} } return; }
+    const keep = scroller.scrollTop;
+    if (cleanup) { try { cleanup(); } catch {} }
+    view.replaceChildren(...next.childNodes);
+    cleanup = typeof r === 'function' ? r : null;
+    scroller.scrollTop = keep;
+    UI.markPlaying && UI.markPlaying();
+    markLibraryActive();
+  }
+  const rerender = debounce(() => {
+    if (!current || document.hidden) return;
     const v = Views[current.view];
     if (v && v.live === false) return; // view handles its own updates
-    render(false);
-  }, 120);
+    if (QUIET_VIEWS.includes(current.view)) return; // pages that don't show your library
+    softRender();
+  }, 250);
 
   function back() { if (hIndex > 0) { hIndex--; current = hist[hIndex]; render(true); } }
   function forward() { if (hIndex < hist.length - 1) { hIndex++; current = hist[hIndex]; render(true); } }
@@ -338,8 +366,13 @@ const App = (() => {
     return pl;
   }
 
-  function renderLibrary() {
+  let libSig = '';
+  function renderLibrary(force) {
     const pr = State.prefs();
+    // nothing changed: keep what's on screen (rebuilding it made the sidebar blink)
+    const sig = JSON.stringify([pr.libFilter, pr.libSort, pr.libView, typeof libQuery === "undefined" ? "" : libQuery, State.libraryEntries().map((e) => [e.key, e.name, e.sub, e.pinned, typeof e.cover === 'object' ? (e.cover.mosaic || []).join() : e.cover])]);
+    if (!force && sig === libSig && $('#lib-list').childElementCount) return;
+    libSig = sig;
     // chips
     const chips = $('#lib-chips');
     chips.innerHTML = '';
@@ -986,7 +1019,7 @@ const App = (() => {
 
   return {
     REPO: 'https://github.com/UndeadBossGames/Aurora',
-    go, back, forward, render, rerender, setHeaderColor, applyTheme, renderLibrary, renderRightPanel,
+    go, back, forward, render, rerender, refresh: () => softRender(), setHeaderColor, applyTheme, renderLibrary, renderRightPanel,
     refreshNowPlaying: () => { renderNowPlayingBar(); renderRightPanel(); },
     playCollection, collectionMenu, newPlaylist, importFiles, importFolder, rescanFolders,
     switchProfile, showProfilePicker, afterProfileChange, toggleRightPanel, about,
@@ -997,4 +1030,12 @@ const App = (() => {
 })();
 
 window.Aurora = { App, State, Player, UI, Views, icon, ICONS };
-document.addEventListener('DOMContentLoaded', () => App.boot().catch((e) => { console.error(e); document.body.insertAdjacentHTML('beforeend', `<pre class="fatal">${esc(e.stack || e)}</pre>`); }));
+// the start-up animation: shown for at least ~1.9 s, then fades away once Aurora is ready
+function hideSplash() {
+  const el = document.getElementById('splash');
+  if (!el || el.classList.contains('out')) return;
+  const wait = Math.max(0, 1900 - performance.now());
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 700); }, wait);
+}
+setTimeout(hideSplash, 9000); // never stay stuck on it
+document.addEventListener('DOMContentLoaded', () => App.boot().then(hideSplash).catch((e) => { hideSplash(); console.error(e); document.body.insertAdjacentHTML('beforeend', `<pre class="fatal">${esc(e.stack || e)}</pre>`); }));
