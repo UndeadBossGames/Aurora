@@ -2,6 +2,13 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.9.0 — 2026-10-31
+- **Identify a song**: hear something you like? Open **Identify a song** (in the menu under your avatar, or Search → Browse) and tap the big button. Aurora listens for 10 seconds and tells you the song, artist, album and year, with the cover. Then **Download song** (.mp3) or **Download video** (.mp4) in one tap, play it if it's already in your library, or find more results
+- **Listen to this PC**: on a PC, Aurora can also listen straight to your computer's sound, so you can identify a song playing in your browser or another app without a microphone
+- Every song you identify is kept in a list, ready to download later
+- Song recognition uses AudD. A few tries work without a key. For more, add your own free key (300 identifications, no card) in Settings → Downloads → Song recognition
+- Your music pauses while Aurora listens on the microphone, so it doesn't identify itself
+
 ## v1.8.1 — 2026-10-30
 - **Shuffle never repeats a song** within a round, not even a second copy of the same song. Turning shuffle on halfway only plays songs you haven't heard yet, and with Repeat on, a new round never starts with the song that just ended
 - **Downloads say what they are**: Song · .mp3 or Video · .mp4, in the format picker, Discover and the Downloads list
