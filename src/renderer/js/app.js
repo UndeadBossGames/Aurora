@@ -153,6 +153,7 @@ const App = (() => {
     const u = Updates.state;
     const tiles = [
       ['discover', 'search', 'Discover', 'Search & download'],
+      ['identify', 'identify', 'Identify a song', "What's playing?"],
       ['friends', 'users', 'Friends', a.friends ? `${a.friends} listening now` : 'See what friends play'],
       ['together', 'headphones', 'Listen Together', ListenTogether.inSession ? 'In a session' : 'Same song, same time'],
       ['store', 'bag', 'Store', 'Themes & effects'],

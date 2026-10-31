@@ -92,6 +92,7 @@ function browse(root) {
     { name: 'Local Files', color: '#477d95', key: 'local', img: genCover('local', '', 'folder') },
     { name: 'Video Downloader', color: '#e13300', view: 'downloader', img: genCover('dl-tile', '', 'download') },
     { name: 'Discover', color: '#7c5cff', view: 'discover', img: genCover('discover-tile', '', 'search') },
+    { name: 'Identify a song', color: '#148a08', view: 'identify', img: genCover('identify-tile', '', 'identify') },
     { name: 'Listen Together', color: '#c2185b', view: 'together', img: genCover('lt-tile', '', 'headphones') },
     { name: 'Friends', color: '#148a8a', view: 'friends', img: genCover('friends-tile', '', 'users') },
     { name: 'Aurora Store', color: '#e1641e', view: 'store', img: genCover('store-tile', '', 'bag') },

@@ -44,6 +44,7 @@ Views.settings = {
         <div class="set-row"><div><b>Download location</b><span class="s-dldir">${esc(s.downloadDir)}</span></div><div class="set-actions"><button class="btn-outline sm s-dlchange">Change</button><button class="btn-outline sm s-dlopen">Open</button></div></div>
         <div class="set-row"><div><b>Default format</b></div><div class="dl-select"><select class="s-fmt">${dlFormats().map(([k, l]) => `<option value="${k}" ${s.dlFormat === k ? 'selected' : ''}>${l}</option>`).join('')}</select><span data-icon="chevronDown" data-icon-size="16"></span></div></div>
         <div class="set-row"><div><b>Add downloads to Library</b></div><input type="checkbox" class="toggle s-dllib" ${s.dlAddToLibrary ? 'checked' : ''}/></div>
+        <div class="set-row"><div><b>Song recognition</b><span>Identify a song uses AudD. Add your own free key for more identifications.${State.settings().auddToken ? ' Your key is saved.' : ''}</span></div><button class="btn-outline sm s-audd">${State.settings().auddToken ? 'Change key' : 'Add key'}</button></div>
         ${native.dl && native.dl.trim ? `<div class="set-row"><div><b>Cut silent endings</b><span>When a download keeps going after the music stops, cut it where the sound ends.</span></div><input type="checkbox" class="toggle s-trim" ${s.trimSilence !== false ? 'checked' : ''}/></div>
         <div class="set-row"><div><b>Fix songs already downloaded</b><span class="s-trim-status">Check every song and video in your library for a silent ending and cut it.</span></div><button class="btn-outline sm s-trim-all">Fix now</button></div>` : ''}
       </section>
@@ -95,6 +96,7 @@ Views.settings = {
     q('.s-dlopen').onclick = () => native.shell.openPath(State.settings().downloadDir);
     q('.s-fmt').onchange = (e) => State.setSetting('dlFormat', e.target.value);
     q('.s-dllib').onchange = (e) => State.setSetting('dlAddToLibrary', e.target.checked);
+    q('.s-audd').onclick = () => keyModal();
     if (q('.s-trim')) {
       q('.s-trim').onchange = (e) => State.setSetting('trimSilence', e.target.checked);
       q('.s-trim-all').onclick = async (e) => {
