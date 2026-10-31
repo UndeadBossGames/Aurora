@@ -8,6 +8,9 @@ Every version is a git tag. To get an older build, download its installer from R
 - Every song you identify is kept in a list, ready to download later
 - Song recognition uses AudD. A few tries work without a key. For more, add your own free key (300 identifications, no card) in Settings → Downloads → Song recognition
 - Your music pauses while Aurora listens on the microphone, so it doesn't identify itself
+- **A start-up animation**: the Aurora logo draws itself over drifting northern lights while the app gets ready
+- **Download queue, touched up**: tabs for All / Downloading / Done / Failed with counts, **Retry failed** in one click, and finished downloads say when they finished. Below it, **Recently downloaded** lists everything you've downloaded, newest first, grouped by Today / Yesterday / This week…, with Song/Video and file type, how long ago, and one-tap play (or Play all)
+- **Fixed: the app sometimes flickered.** When your library changed in the background (a download finishing, cover art updates, syncing with your Aurora Account), the whole page was rebuilt and blinked. Pages now update off-screen and swap in once their pictures are ready, the sidebar only redraws when something in it changed, and the same theme is never re-applied twice
 
 ## v1.8.1 — 2026-10-30
 - **Shuffle never repeats a song** within a round, not even a second copy of the same song. Turning shuffle on halfway only plays songs you haven't heard yet, and with Repeat on, a new round never starts with the song that just ended
