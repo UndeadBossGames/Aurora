@@ -219,7 +219,7 @@ class Downloader extends EventEmitter {
     };
   }
 
-  async add({ url, format = 'video-best', dir, playlist = false, addToLibrary = true, parallel = true, tag = null }) {
+  async add({ url, format = 'video-best', dir, playlist = false, addToLibrary = true, parallel = true, tag = null, meta = null }) {
     url = String(url || '').trim();
     if (!url) throw new Error('Paste a link first');
     if (!/^https?:\/\//i.test(url) && !/^ytsearch\d*:/i.test(url)) {
@@ -242,7 +242,7 @@ class Downloader extends EventEmitter {
       if (list && list.entries.length > 1) {
         for (const e of list.entries.slice(0, 2000)) created.push(this.createJob({ url: e.url, displayUrl: url, title: e.title, source: sourceName(url), format, dir, playlist: false, addToLibrary, group: list.title, tag }));
       } else {
-        created.push(this.createJob({ url, displayUrl: url, title: url.replace(/^ytsearch1:/, 'Search: '), source: sourceName(url), format, dir, playlist, addToLibrary, tag }));
+        created.push(this.createJob({ url, displayUrl: url, title: meta && meta.title ? `${meta.artist ? meta.artist + ' - ' : ''}${meta.title}` : url.replace(/^ytsearch1:/, 'Search: '), source: sourceName(url), format, dir, playlist, addToLibrary, tag, meta: meta || undefined }));
       }
     }
     this.pump();

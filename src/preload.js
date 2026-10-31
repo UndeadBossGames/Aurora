@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld('native', {
   shell: { showItem: invoke('shell:showItem'), openPath: invoke('shell:openPath'), openExternal: invoke('shell:openExternal') },
   art: { lookup: invoke('art:lookup') },
   lan: { offer: invoke('lan:offer') },
+  identify: { recognize: invoke('identify:recognize'), systemAudio: true },
   discord: {
     configure: invoke('discord:configure'),
     status: invoke('discord:status'),

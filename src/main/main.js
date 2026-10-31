@@ -1,5 +1,5 @@
 // Aurora - main (Node/Electron) process.
-const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, Menu, session } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage, Menu, session, desktopCapturer } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Store = require('./store');
@@ -102,6 +102,12 @@ app.on('second-instance', () => {
 });
 
 app.whenReady().then(() => {
+  // "What's playing on this PC": share the computer's sound (loopback), no picker needed
+  try {
+    session.defaultSession.setDisplayMediaRequestHandler((_req, cb) => {
+      desktopCapturer.getSources({ types: ['screen'] }).then((src) => cb({ video: src[0], audio: 'loopback' })).catch(() => cb({}));
+    });
+  } catch (e) { console.warn('display media handler', e); }
   Menu.setApplicationMenu(null);
   ensureCustomFiles();
   downloader = new Downloader({ binDir: BIN, coversDir: COVERS });
@@ -198,6 +204,16 @@ function registerIpc() {
   // Friend sharing: read a song's bytes to send to a friend, and save one a friend sent us.
   ipcMain.handle('library:stat', (_e, file) => { const st = fs.statSync(file); return { size: st.size }; });
   ipcMain.handle('lan:offer', (_e, file) => lanshare.offer(file));
+  // song recognition (AudD): the clip goes from here so the page doesn't need the API to allow it
+  ipcMain.handle('identify:recognize', async (_e, { b64, mime, token }) => {
+    const fd = new FormData();
+    fd.append('api_token', token || 'test');
+    fd.append('return', 'apple_music,spotify,deezer');
+    fd.append('file', new Blob([Buffer.from(b64, 'base64')], { type: mime || 'audio/webm' }), /mp4|m4a|aac/.test(mime || '') ? 'clip.m4a' : 'clip.webm');
+    const r = await fetch('https://api.audd.io/', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error(`The recognition service answered ${r.status}`);
+    return r.json();
+  });
   ipcMain.handle('library:readBytes', (_e, file) => {
     const st = fs.statSync(file);
     if (st.size > 400 * 1024 * 1024) throw new Error('This file is too large to send over the internet (max 400 MB).');
