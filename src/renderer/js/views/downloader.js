@@ -54,9 +54,10 @@ Views.downloader = {
         <div class="dl-sources">${SOURCES.map((x) => `<span class="src-chip">${esc(x)}</span>`).join('')}<span class="src-chip more">+ 1000 more</span></div>
       </div>
 
-      <div class="dl-queue-head"><h2>Downloads</h2><div><button class="btn-outline sm dl-clear">Clear finished</button></div></div>
-      <div class="dl-list" id="dl-list"></div>
-      <div class="dl-recent"></div>
+      <div class="dl-queue-head"><h2>Download queue</h2><div class="dl-q-btns"><button class="btn-outline sm dl-retry-all" hidden>${icon('refresh', 14)} Retry failed</button><button class="btn-outline sm dl-clear">Clear finished</button></div></div>
+      <div class="dl-q-tabs seg"><button data-f="all" class="on">All <em></em></button><button data-f="active">Downloading <em></em></button><button data-f="done">Done <em></em></button><button data-f="error">Failed <em></em></button></div>
+      <div class="dl-list" id="dl-list" data-f="all"></div>
+      <section class="dl-recent"></section>
 
       <div class="dl-tools">
         <div class="dl-tools-head"><b>Download engine</b><span class="dl-tool-status muted">${esc(DL.toolStatus)}</span></div>
@@ -111,30 +112,108 @@ Views.downloader = {
     const jobs = [...DL.jobs.values()].sort((a, b) => b.createdAt - a.createdAt);
     jobs.forEach((j) => dlUpdateRow(j, true));
     dlEmpty();
+    // queue filters
+    $$('.dl-q-tabs button', el).forEach((b) => b.onclick = () => {
+      $$('.dl-q-tabs button', el).forEach((x) => x.classList.toggle('on', x === b));
+      $('#dl-list', el).dataset.f = b.dataset.f;
+      dlEmpty();
+    });
+    $('.dl-retry-all', el).onclick = () => [...DL.jobs.values()].filter((j) => j.status === 'error').forEach((j) => native.dl.retry(j.id));
+    dlCounts();
 
     native.dl.tools().then((t) => { DL.tools = t; dlRenderTools(); });
     $('.dl-discover', el).onclick = () => App.go('discover');
     // recently downloaded (from the library, so it survives restarts)
-    const recent = State.allTracks().filter((t) => t.source !== 'local').sort((a, b) => b.addedAt - a.addedAt).slice(0, 10);
-    if (recent.length) {
-      const host = $('.dl-recent', el);
-      host.appendChild(UI.shelf('Recently downloaded', recent.map((t, i) => UI.card({
-        title: t.title, sub: esc(`${t.artist} · ${t.source}${t.size ? ' · ' + fmtBytes(t.size) : ''}`), cover: UI.coverSrc(t),
-        onOpen: () => Player.playContext({ key: 'downloads', name: 'Downloads' }, recent.map((x) => x.id), i),
-        onPlay: () => Player.playContext({ key: 'downloads', name: 'Downloads' }, recent.map((x) => x.id), i),
-      })), { onMore: () => App.go('collection', 'downloads') }));
-    }
+    dlRenderRecent($('.dl-recent', el));
+    const offLib = State.on('library', debounce(() => { const h = $('.dl-recent'); if (h) dlRenderRecent(h); }, 400));
     hydrateIcons(el);
+    return () => offLib();
   },
 };
+
+// how many downloads are in each state (shown on the queue tabs)
+function dlCounts() {
+  const tabs = document.querySelector('.dl-q-tabs');
+  if (!tabs) return;
+  const js = [...DL.jobs.values()];
+  const n = { all: js.length, active: js.filter((j) => ['queued', 'downloading', 'preparing'].includes(j.status)).length, done: js.filter((j) => j.status === 'done').length, error: js.filter((j) => ['error', 'cancelled'].includes(j.status)).length };
+  tabs.querySelectorAll('button').forEach((b) => { const c = n[b.dataset.f]; b.querySelector('em').textContent = c ? c : ''; });
+  const ra = document.querySelector('.dl-retry-all'); if (ra) ra.hidden = !n.error;
+}
+
+const dlAgo = (ts) => {
+  const s = Math.max(0, (Date.now() - ts) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  if (s < 7 * 86400) return `${Math.floor(s / 86400)} d ago`;
+  return fmtDate(ts);
+};
+const dlExt = (t) => (String(t.path || '').match(/\.([a-z0-9]{2,4})$/i) || [, t.kind === 'video' ? 'mp4' : 'mp3'])[1].toLowerCase();
+
+// "Recently downloaded": everything you downloaded, newest first, grouped by day, one tap to play
+function dlRenderRecent(host) {
+  const st = host.__st || (host.__st = { kind: 'all', limit: 30 });
+  const all = State.allTracks().filter((t) => t.source !== 'local').sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+  host.innerHTML = '';
+  if (!all.length) return;
+  const list = all.filter((t) => st.kind === 'all' || (st.kind === 'video' ? t.kind === 'video' : t.kind !== 'video'));
+  const songs = all.filter((t) => t.kind !== 'video').length, vids = all.length - songs;
+  const head = html(`<div class="dl-recent-head"><div><h2>Recently downloaded</h2><span class="muted">${all.length} item${all.length === 1 ? '' : 's'} · ${songs} song${songs === 1 ? '' : 's'} · ${vids} video${vids === 1 ? '' : 's'}</span></div>
+    <div class="seg dl-r-kind"><button data-k="all">All</button><button data-k="song">Songs</button><button data-k="video">Videos</button></div>
+    <button class="btn-accent sm dl-r-play">${icon('play', 14)} Play all</button></div>`);
+  head.querySelectorAll('.dl-r-kind button').forEach((b) => { b.classList.toggle('on', b.dataset.k === st.kind); b.onclick = () => { st.kind = b.dataset.k; st.limit = 30; dlRenderRecent(host); }; });
+  head.querySelector('.dl-r-play').onclick = () => Player.playContext({ key: 'downloads', name: 'Recently downloaded' }, list.map((t) => t.id), 0);
+  host.appendChild(head);
+  const ids = list.map((t) => t.id);
+  const dayOf = (ts) => {
+    const d = new Date(ts || 0), now = new Date();
+    if (d.toDateString() === now.toDateString()) return 'Today';
+    if (d.toDateString() === new Date(Date.now() - 864e5).toDateString()) return 'Yesterday';
+    if (Date.now() - d < 7 * 864e5) return 'This week';
+    if (Date.now() - d < 31 * 864e5) return 'This month';
+    return 'Earlier';
+  };
+  let day = '';
+  const box = html('<div class="dl-r-list"></div>');
+  list.slice(0, st.limit).forEach((t, i) => {
+    const d = dayOf(t.addedAt);
+    if (d !== day) { day = d; box.appendChild(html(`<div class="dl-r-day">${d}</div>`)); }
+    const ext = dlExt(t);
+    const playing = Player.current && Player.current.id === t.id;
+    const row = html(`<div class="dl-r-row ${playing ? 'playing' : ''}" data-id="${esc(t.id)}">
+      <div class="dl-r-cover">${UI.coverHtml(UI.coverSrc(t), '')}<button class="dl-r-pbtn">${icon('play', 16)}</button></div>
+      <div class="dl-r-t"><b>${esc(t.title)}</b><span>${esc(t.artist)}</span></div>
+      <span class="dl-type ${t.kind === 'video' ? 'video' : 'song'}">${t.kind === 'video' ? 'Video' : 'Song'} · .${esc(ext)}</span>
+      <span class="dl-r-when" title="${esc(new Date(t.addedAt || 0).toLocaleString())}">${esc(dlAgo(t.addedAt || 0))}</span>
+      <button class="icon-btn small dl-r-more" title="More">${icon('dotsH', 16)}</button>
+    </div>`);
+    row.onclick = (e) => {
+      if (e.target.closest('.dl-r-more')) { const r = e.target.closest('.dl-r-more').getBoundingClientRect(); return UI.trackMenu(t, r.right, r.bottom); }
+      Player.playContext({ key: 'downloads', name: 'Recently downloaded' }, ids, i);
+    };
+    row.oncontextmenu = (e) => { e.preventDefault(); UI.trackMenu(t, e.clientX, e.clientY); };
+    box.appendChild(row);
+  });
+  host.appendChild(box);
+  if (list.length > st.limit) {
+    const more = html(`<button class="btn-outline sm dl-r-more-btn">Show ${Math.min(30, list.length - st.limit)} more</button>`);
+    more.onclick = () => { st.limit += 30; dlRenderRecent(host); };
+    host.appendChild(more);
+  }
+}
 
 function dlEmpty() {
   const list = $('#dl-list');
   if (!list) return;
-  const has = list.querySelector('.dl-row');
+  const f = list.dataset.f || 'all';
+  const match = { all: '.dl-row', active: '.dl-row.queued, .dl-row.downloading, .dl-row.preparing', done: '.dl-row.done', error: '.dl-row.error, .dl-row.cancelled' }[f];
+  const has = list.querySelector(match);
   let e = list.querySelector('.dl-empty');
-  if (!has && !e) list.appendChild(html(`<div class="dl-empty muted"><span data-icon="downloadCircle" data-icon-size="40"></span><span>Your downloads will show up here.</span></div>`));
-  if (has && e) e.remove();
+  const msg = { all: 'Your downloads will show up here.', active: 'Nothing downloading right now.', done: 'Finished downloads show up here.', error: 'No failed downloads.' }[f];
+  if (!has && !e) { e = html(`<div class="dl-empty muted"><span data-icon="downloadCircle" data-icon-size="40"></span><span class="dl-empty-t"></span></div>`); hydrateIcons(e); list.appendChild(e); }
+  if (e) { if (has) e.remove(); else e.querySelector('.dl-empty-t').textContent = msg; }
+  dlCounts();
 }
 
 function dlUpdateRow(j, append = false) {
@@ -144,7 +223,7 @@ function dlUpdateRow(j, append = false) {
   const statusText = {
     queued: 'Waiting…', preparing: j.statusText || 'Preparing…',
     downloading: j.statusText || `${j.progress.toFixed(1)}%${j.speed ? ' · ' + j.speed : ''}${j.eta && j.eta !== 'Unknown' ? ' · ' + j.eta + ' left' : ''}`,
-    done: j.files.length > 1 ? `Done · ${j.files.length} files` : 'Done', error: j.error || 'Failed', cancelled: 'Cancelled',
+    done: `${j.files.length > 1 ? `Done · ${j.files.length} files` : 'Done'}${j.finishedAt || j.createdAt ? ' · ' + dlAgo(j.finishedAt || j.createdAt) : ''}`, error: j.error || 'Failed', cancelled: 'Cancelled',
   }[j.status];
   const thumb = (j.files[0] && j.files[0].cover && native.fileUrl(j.files[0].cover)) || j.thumbnail || (j.meta && j.meta.cover) || genCover(j.id, '', j.format.startsWith('video') ? 'video' : 'music');
   const inner = `
