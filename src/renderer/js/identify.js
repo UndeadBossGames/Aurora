@@ -13,7 +13,7 @@ const Identify = (() => {
 
   const token = () => (State.settings().auddToken || '').trim();
   const history = () => State.prefs().identHistory || [];
-  const canSystem = () => !!(window.native && native.identify && native.identify.systemAudio && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+  const canSystem = () => !!(window.native && native.platform !== 'ios' && native.identify && native.identify.systemAudio && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
 
   function pickMime() {
     const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/aac', 'audio/mpeg'];
