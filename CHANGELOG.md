@@ -2,6 +2,13 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.8.1 — 2026-10-30
+- **Shuffle never repeats a song** within a round, not even a second copy of the same song. Turning shuffle on halfway only plays songs you haven't heard yet, and with Repeat on, a new round never starts with the song that just ended
+- **Downloads say what they are**: Song · .mp3 or Video · .mp4, in the format picker, Discover and the Downloads list
+- Touch screens: one tap on a song plays it
+- Songs with a silent ending that couldn't be trimmed now move on where the sound stops
+- Support for Aurora for iPhone 1.4 (new iPhone layout setting, silent-ending trimming)
+
 ## v1.8.0 — 2026-10-29
 - **Aurora Account**: sign in with an account name and password (Search → Aurora Account, or the button on your profile). Use the same one on your PC and iPhone and your profile (name, photo, bio, status, banner, favorites), Favorites, playlists and Store look stay the same on both
 - **Songs on your other devices**: the Account page lists every song that's on another of your devices but not this one. Download one or all of them, or turn on automatic downloads. Songs are copied straight from your other device (at full Wi-Fi speed on the same network), or downloaded again from YouTube/SoundCloud when that device is off
