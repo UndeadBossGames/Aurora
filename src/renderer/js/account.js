@@ -234,6 +234,7 @@ const Account = (() => {
   }, 1200);
 
   // ---------- account → this device ----------
+  let lastLookApplied = '';
   async function applyAccount() {
     if (!acct) return;
     applying = true;
@@ -255,8 +256,13 @@ const Account = (() => {
         if (Object.keys(patch).length) State.updateProfile(me.id, patch);
       }
       if (acct.look) {
-        if (acct.look.store && JSON.stringify(acct.look.store) !== JSON.stringify(State.prefs().store)) { State.setPref('store', acct.look.store); if (typeof Store !== 'undefined' && Store.apply) Store.apply(); }
-        if (acct.look.accent && acct.look.accent !== State.prefs().accent) { State.setPref('accent', acct.look.accent); App.applyTheme(); }
+        // re-styling the whole app is visible, so only when the look really changed (and never the same one twice)
+        const lookSig = JSON.stringify(acct.look);
+        if (lookSig !== lastLookApplied) {
+          lastLookApplied = lookSig;
+          if (acct.look.store && JSON.stringify(acct.look.store) !== JSON.stringify(State.prefs().store)) { State.setPref('store', acct.look.store); if (typeof Store !== 'undefined' && Store.apply) Store.apply(); }
+          if (acct.look.accent && acct.look.accent !== State.prefs().accent) { State.setPref('accent', acct.look.accent); App.applyTheme(); }
+        }
       }
       const tracks = byKey();
       const sync = syncPrefs();
