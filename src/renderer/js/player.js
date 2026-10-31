@@ -10,6 +10,7 @@ const Player = (() => {
     order: [],        // play order (indexes into queue) - shuffled or not
     pos: -1,          // position within order
     userQueue: [],    // "Add to queue" items, played next
+    played: new Set(), // queue positions played this round (shuffle never repeats within a round)
     context: null,    // { key, name }
     shuffle: false,
     repeat: 'off',    // off | all | one
@@ -18,10 +19,20 @@ const Player = (() => {
     volume: 0.7,
   };
 
-  function buildOrder(startIdx = 0) {
+  // the same song (even as a second copy/download) only once per shuffle round
+  const songKey = (id) => { const t = State.track(id); return t ? `${t.artist}|${t.title}`.toLowerCase().replace(/\s*[([][^)\]]*[)\]]/g, '').replace(/[^a-z0-9|]+/g, '') : String(id); };
+  // exclude: queue positions already played this round (when shuffle is turned on mid-way)
+  function buildOrder(startIdx = 0, exclude = null) {
     P.order = P.queue.map((_, i) => i);
     if (P.shuffle) {
-      const rest = P.order.filter((i) => i !== startIdx);
+      const seen = new Set([songKey(P.queue[startIdx])]);
+      const rest = [];
+      for (const i of P.order) {
+        if (i === startIdx || (exclude && exclude.has(i))) continue;
+        const k = songKey(P.queue[i]);
+        if (seen.has(k)) continue;
+        seen.add(k); rest.push(i);
+      }
       for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
       P.order = [startIdx, ...rest];
       P.pos = 0;
@@ -34,6 +45,7 @@ const Player = (() => {
     if (!ids.length) return;
     P.queue = ids.slice();
     P.context = context;
+    P.played = new Set();
     if (startIdx < 0) startIdx = P.shuffle ? Math.floor(Math.random() * ids.length) : 0;
     buildOrder(startIdx);
     if (context && context.key) {
@@ -49,6 +61,7 @@ const Player = (() => {
     const t = State.track(id);
     if (!t) return;
     P.current = id;
+    if (P.played && P.order.length && P.queue[P.order[P.pos]] === id) P.played.add(P.order[P.pos]);
     media.src = native.fileUrl(t.path);
     media.currentTime = startAt || 0;
     if (autoplay) {
@@ -98,7 +111,16 @@ const Player = (() => {
     if (P.userQueue.length) { const id = P.userQueue.shift(); emit('queue'); return load(id, true); }
     if (!P.order.length) return;
     if (P.pos < P.order.length - 1) P.pos++;
-    else if (P.repeat === 'all' || !auto) { if (P.shuffle) buildOrder(P.order[0]); P.pos = 0; }
+    else if (P.repeat === 'all' || !auto) {
+      // a new round: with shuffle, a fresh order that doesn't start with the song that just ended
+      P.played = new Set();
+      if (P.shuffle) {
+        const last = P.order[P.pos];
+        const options = P.queue.map((_, i) => i).filter((i) => i !== last && songKey(P.queue[i]) !== songKey(P.queue[last]));
+        buildOrder(options.length ? options[Math.floor(Math.random() * options.length)] : last);
+      }
+      P.pos = 0;
+    }
     else { media.pause(); media.currentTime = 0; emit('state'); return; }
     load(P.queue[P.order[P.pos]], true);
   }
@@ -125,7 +147,8 @@ const Player = (() => {
     P.shuffle = !P.shuffle;
     if (P.queue.length) {
       const cur = P.order[P.pos];
-      buildOrder(cur);
+      // turning shuffle on: only songs you haven't heard yet this round come next
+      buildOrder(cur, P.shuffle ? P.played : null);
     }
     State.setPref('shuffle', P.shuffle);
     emit('mode');
