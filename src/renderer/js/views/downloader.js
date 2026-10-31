@@ -67,7 +67,7 @@ Views.downloader = {
     root.appendChild(el);
 
     const fmt = $('#dl-format', el);
-    const formats = [['video-best', 'Video · Best (MP4)'], ['video-1080', 'Video · 1080p (MP4)'], ['video-720', 'Video · 720p (MP4)'], ['audio-mp3', 'Audio · MP3'], ['audio-m4a', 'Audio · M4A']];
+    const formats = dlFormats();
     fmt.innerHTML = formats.map(([k, l]) => `<option value="${k}" ${s.dlFormat === k ? 'selected' : ''}>${l}</option>`).join('');
     fmt.onchange = () => State.setSetting('dlFormat', fmt.value);
     $('#dl-lib', el).onchange = (e) => State.setSetting('dlAddToLibrary', e.target.checked);

@@ -147,3 +147,13 @@ function fmtBytes(n) {
   const i = Math.min(u.length - 1, Math.floor(Math.log(n) / Math.log(1024)));
   return (n / Math.pow(1024, i)).toFixed(i >= 2 ? 1 : 0) + ' ' + u[i];
 }
+
+// download formats, named by what you get: a song (.mp3 / .m4a audio file) or a video (.mp4)
+// (the iPhone can't make MP3 files, so its songs are .m4a: same sound, Apple's format)
+function dlFormats() {
+  const ios = window.native && native.platform === 'ios';
+  return [
+    ['video-best', 'Video · best quality (.mp4)'], ['video-1080', 'Video · 1080p (.mp4)'], ['video-720', 'Video · 720p (.mp4)'],
+    ['audio-mp3', ios ? 'Song · best audio (.m4a)' : 'Song · audio (.mp3)'], ['audio-m4a', 'Song · audio (.m4a)'],
+  ];
+}

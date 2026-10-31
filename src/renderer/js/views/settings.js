@@ -42,7 +42,7 @@ Views.settings = {
 
       <section><h2>Downloads</h2>
         <div class="set-row"><div><b>Download location</b><span class="s-dldir">${esc(s.downloadDir)}</span></div><div class="set-actions"><button class="btn-outline sm s-dlchange">Change</button><button class="btn-outline sm s-dlopen">Open</button></div></div>
-        <div class="set-row"><div><b>Default format</b></div><div class="dl-select"><select class="s-fmt">${[['video-best', 'Video · Best (MP4)'], ['video-1080', 'Video · 1080p'], ['video-720', 'Video · 720p'], ['audio-mp3', 'Audio · MP3'], ['audio-m4a', 'Audio · M4A']].map(([k, l]) => `<option value="${k}" ${s.dlFormat === k ? 'selected' : ''}>${l}</option>`).join('')}</select><span data-icon="chevronDown" data-icon-size="16"></span></div></div>
+        <div class="set-row"><div><b>Default format</b></div><div class="dl-select"><select class="s-fmt">${dlFormats().map(([k, l]) => `<option value="${k}" ${s.dlFormat === k ? 'selected' : ''}>${l}</option>`).join('')}</select><span data-icon="chevronDown" data-icon-size="16"></span></div></div>
         <div class="set-row"><div><b>Add downloads to Library</b></div><input type="checkbox" class="toggle s-dllib" ${s.dlAddToLibrary ? 'checked' : ''}/></div>
         ${native.dl && native.dl.trim ? `<div class="set-row"><div><b>Cut silent endings</b><span>When a download keeps going after the music stops, cut it where the sound ends.</span></div><input type="checkbox" class="toggle s-trim" ${s.trimSilence !== false ? 'checked' : ''}/></div>
         <div class="set-row"><div><b>Fix songs already downloaded</b><span class="s-trim-status">Check every song and video in your library for a silent ending and cut it.</span></div><button class="btn-outline sm s-trim-all">Fix now</button></div>` : ''}

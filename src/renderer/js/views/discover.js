@@ -57,7 +57,6 @@ async function discoverDownload(r, format) {
   }
 }
 
-const DV_FORMATS = [['video-best', 'Video · Best (MP4)'], ['video-1080', 'Video · 1080p'], ['video-720', 'Video · 720p'], ['audio-mp3', 'Audio · MP3'], ['audio-m4a', 'Audio · M4A']];
 
 function discoverPreview(r) {
   if (Player.playing) Player.toggle();
@@ -75,7 +74,7 @@ function discoverPreview(r) {
       </div>
     </div>
     <div class="dv-pv-actions">
-      <div class="dl-select"><select class="dv-fmt">${DV_FORMATS.map(([k, l]) => `<option value="${k}" ${k === def ? 'selected' : ''}>${l}</option>`).join('')}</select><span data-icon="chevronDown" data-icon-size="16"></span></div>
+      <div class="dl-select"><select class="dv-fmt">${dlFormats().map(([k, l]) => `<option value="${k}" ${k === def ? 'selected' : ''}>${l}</option>`).join('')}</select><span data-icon="chevronDown" data-icon-size="16"></span></div>
       <button class="btn-accent dv-dl-btn">${icon('download', 18)} Download</button>
       <button class="btn-outline sm dv-open">${icon('external', 14)} Open on ${esc(r.source)}</button>
     </div>
@@ -182,9 +181,9 @@ Views.discover = {
         $('.dl', card).onclick = (e) => {
           e.stopPropagation();
           const rect = e.currentTarget.getBoundingClientRect();
-          UI.menu([{ header: 'Download as' }, ...DV_FORMATS.map(([k, l]) => ({ label: l, action: () => discoverDownload(r, k) }))], rect.left, rect.bottom + 4, { minWidth: 200 });
+          UI.menu([{ header: 'Download as' }, ...dlFormats().map(([k, l]) => ({ label: l, action: () => discoverDownload(r, k) }))], rect.left, rect.bottom + 4, { minWidth: 200 });
         };
-        card.oncontextmenu = (e) => { e.preventDefault(); UI.menu([{ label: 'Preview', icon: 'play', action: () => discoverPreview(r) }, { label: 'Download video (MP4)', icon: 'video', action: () => discoverDownload(r, 'video-best') }, { label: 'Download audio (MP3)', icon: 'music', action: () => discoverDownload(r, 'audio-mp3') }, { divider: true }, { label: `Open on ${r.source}`, icon: 'external', action: () => native.shell.openExternal(r.url) }], e.clientX, e.clientY); };
+        card.oncontextmenu = (e) => { e.preventDefault(); UI.menu([{ label: 'Preview', icon: 'play', action: () => discoverPreview(r) }, { label: 'Download as a video (.mp4)', icon: 'video', action: () => discoverDownload(r, 'video-best') }, { label: `Download as a song (${native.platform === 'ios' ? '.m4a' : '.mp3'})`, icon: 'music', action: () => discoverDownload(r, 'audio-mp3') }, { divider: true }, { label: `Open on ${r.source}`, icon: 'external', action: () => native.shell.openExternal(r.url) }], e.clientX, e.clientY); };
         const j = Discover.jobsByUrl.get(r.url);
         if (j) discoverCardState(card, j);
         grid.appendChild(card);
