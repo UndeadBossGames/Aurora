@@ -2,6 +2,10 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.10.0
+- **Songs first:** YouTube searches now show the official songs (from YouTube Music) at the top in a Spotify-style list, with a one-tap **Song** download button. Music videos follow in their own Videos section, with All / Songs / Videos tabs.
+- **Official song, not the music video:** downloading a music video as a song now grabs the official release instead (no intros, skits or outros) when one matches. Identify downloads use the official song too.
+
 ## v1.9.0 — 2026-10-31
 - **Identify a song**: hear something you like? Open **Identify a song** (in the menu under your avatar, or Search → Browse) and tap the big button. Aurora listens for 10 seconds and tells you the song, artist, album and year, with the cover. Then **Download song** (.mp3) or **Download video** (.mp4) in one tap, play it if it's already in your library, or find more results
 - **Listen to this PC**: on a PC, Aurora can also listen straight to your computer's sound, so you can identify a song playing in your browser or another app without a microphone
