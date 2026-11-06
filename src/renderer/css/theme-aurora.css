@@ -827,3 +827,32 @@ body {
 .dl-r-when { font-size: 12px; color: var(--text-sub); white-space: nowrap; min-width: 64px; text-align: right; }
 .dl-r-more-btn { display: block; margin: 14px auto 0; }
 @media (max-width: 600px) { .dl-r-row .dl-type { display: none; } .dl-r-when { min-width: 0; } }
+
+/* Discover: songs first (a Spotify-style list), then videos */
+.dv-tabs { margin: 4px 0 6px; }
+.dv-tabs small { opacity: .6; margin-left: 4px; font-weight: 600; }
+.dv-sec { display: flex; align-items: center; gap: 8px; font-size: 22px; margin: 22px 0 10px; }
+.dv-sec .muted { font-size: 13px; font-weight: 500; }
+.dv-songs { display: flex; flex-direction: column; gap: 2px; }
+.dv-card.dv-song { display: grid; grid-template-columns: 26px 48px minmax(0, 1fr) auto auto auto auto; align-items: center; gap: 14px; padding: 6px 12px; border-radius: 8px; overflow: hidden; }
+.dv-card.dv-song:hover { transform: none; }
+.dv-n { color: var(--text-sub); text-align: right; font-variant-numeric: tabular-nums; }
+.dv-s-art { position: relative; width: 48px; height: 48px; border-radius: 6px; overflow: hidden; background: var(--bg-elevated); }
+.dv-s-art img { width: 100%; height: 100%; object-fit: cover; }
+.dv-s-play { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, .55); color: #fff; opacity: 0; transition: opacity .15s; border: 0; cursor: pointer; }
+.dv-song:hover .dv-s-play { opacity: 1; }
+.dv-s-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.dv-s-text b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; font-weight: 600; }
+.dv-s-text b:hover { text-decoration: underline; }
+.dv-s-text span { color: var(--text-sub); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dv-s-dur { color: var(--text-sub); font-size: 13px; font-variant-numeric: tabular-nums; }
+.dv-song .dv-state { position: static; }
+.dv-song .dv-bar { height: 2px; }
+.dv-more-songs { margin-top: 8px; }
+@media (max-width: 700px) {
+  .dv-card.dv-song { grid-template-columns: 44px minmax(0, 1fr) auto auto; gap: 10px; padding: 6px 4px; }
+  .dv-song .dv-n, .dv-song .dv-s-dur, .dv-song .dv-state:not(.busy):not(.done):not(.error) { display: none; }
+  .dv-song .dv-state { grid-column: 2; grid-row: 2; justify-self: start; }
+  .dv-s-art { width: 44px; height: 44px; }
+  .dv-s-play { opacity: 1; background: rgba(0, 0, 0, .25); }
+}

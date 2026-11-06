@@ -126,7 +126,10 @@ const Identify = (() => {
   async function download(r, kind = 'song') {
     const q = kind === 'video' ? `${r.artist} - ${r.title} official video` : `${r.artist} - ${r.title} audio`;
     const fmt = kind === 'video' ? 'video-best' : (window.native && native.platform === 'ios' ? 'audio-m4a' : 'audio-mp3');
-    const jobs = await native.dl.add({ url: `ytsearch1:${q}`, format: fmt, dir: State.settings().downloadDir, playlist: false, addToLibrary: true, meta: { title: r.title, artist: r.artist, cover: r.art || undefined } });
+    // songs: the official release from YouTube Music when there is one
+    let url = `ytsearch1:${q}`;
+    if (kind !== 'video' && typeof discoverOfficialSong === 'function') { const off = await discoverOfficialSong(r.title, r.artist); if (off) url = off.url; }
+    const jobs = await native.dl.add({ url, format: fmt, dir: State.settings().downloadDir, playlist: false, addToLibrary: true, meta: { title: r.title, artist: r.artist, cover: r.art || undefined } });
     UI.toast(`Downloading "${r.title}" as a ${kind === 'video' ? 'video' : 'song'}`);
     return jobs;
   }

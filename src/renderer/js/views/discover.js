@@ -49,7 +49,13 @@ function discoverPreviewState(pv, j) {
 async function discoverDownload(r, format) {
   discoverBind();
   try {
-    const jobs = await native.dl.add({ url: r.url, format, dir: State.settings().downloadDir, playlist: false, addToLibrary: State.settings().dlAddToLibrary !== false });
+    let url = r.url;
+    // downloading a music video as a song? grab the official song instead (better sound, no intro/outro)
+    if (/^audio/.test(format) && r.source === 'YouTube' && r.kind !== 'song' && !discoverIsSong(r)) {
+      const off = await discoverOfficialSong(r.title);
+      if (off) { url = off.url; UI.toast(`Using the official song: ${off.title}${off.channel ? ' - ' + off.channel : ''}`); }
+    }
+    const jobs = await native.dl.add({ url, format, dir: State.settings().downloadDir, playlist: false, addToLibrary: State.settings().dlAddToLibrary !== false });
     jobs.forEach((j) => { Discover.jobsByUrl.set(r.url, j); $$(`.dv-card[data-url="${CSS.escape(r.url)}"]`).forEach((c) => discoverCardState(c, j)); });
     UI.toast(`Downloading "${r.title}"`);
   } catch (e) {
@@ -57,6 +63,41 @@ async function discoverDownload(r, format) {
   }
 }
 
+// ---- songs vs videos ----
+const SONG_FMT = () => (native.platform === 'ios' ? 'audio-m4a' : 'audio-mp3');
+const VIDEO_WORDS = /\b(official\s+(music\s+)?video|music\s+video|official\s+mv|\bm\/?v\b|visuali[sz]er|live\b|performance|reaction|trailer|teaser|behind the scenes)/i;
+const AUDIO_WORDS = /\b(official\s+audio|\(audio\)|\[audio\]|audio only|lyrics?|lyric video)\b/i;
+function discoverIsSong(r) {
+  if (r.kind) return r.kind === 'song';
+  if (/ - Topic$/i.test(r.channel || '')) return true;
+  return AUDIO_WORDS.test(r.title) && !VIDEO_WORDS.test(r.title);
+}
+// "Artist - Song (Official Music Video) [4K]" -> "Artist - Song"
+function discoverCleanTitle(t) {
+  return String(t || '').replace(/\s*[([【][^)\]】]*(official|video|audio|lyric|visuali|m\/?v|4k|hd|remaster|explicit)[^)\]】]*[)\]】]/gi, '').replace(/\s*\|.*$/, '').replace(/\s+/g, ' ').trim();
+}
+const discoverNorm = (s) => String(s || '').toLowerCase().replace(/\s*\b(feat|ft)\b.*$/, '').replace(/[^a-z0-9]+/g, '');
+// Find the official song (YouTube Music "Songs") for a title; null if nothing matches well.
+async function discoverOfficialSong(title, artist = '') {
+  const clean = discoverCleanTitle(title);
+  let list = [];
+  try { list = await native.dl.search(`${artist ? artist + ' ' : ''}${clean}`, 'songs', 5); } catch { return null; }
+  const whole = discoverNorm(`${artist} ${clean}`);
+  return list.find((x) => {
+    const t = discoverNorm(x.title), a = discoverNorm(x.channel).slice(0, 8);
+    return t.length > 1 && whole.includes(t) && (!a || whole.includes(a) || !artist && !/ - /.test(clean));
+  }) || null;
+}
+// YouTube search with the official songs first; never fails just because one half failed
+async function discoverSearch(q, source) {
+  if (source !== 'youtube') return native.dl.search(q, source, 24);
+  const [songs, vids] = await Promise.allSettled([native.dl.search(q, 'songs', 10), native.dl.search(q, 'youtube', 24)]);
+  if (songs.status === 'rejected' && vids.status === 'rejected') throw vids.reason;
+  const seen = new Set(), out = [];
+  for (const r of (songs.value || [])) if (r.id && !seen.has(r.id)) { seen.add(r.id); out.push({ ...r, kind: 'song' }); }
+  for (const r of (vids.value || [])) if (r.id && !seen.has(r.id)) { seen.add(r.id); out.push({ ...r, kind: discoverIsSong(r) ? 'song' : 'video' }); }
+  return out;
+}
 
 function discoverPreview(r) {
   if (Player.playing) Player.toggle();
@@ -64,7 +105,7 @@ function discoverPreview(r) {
   const embed = yt
     ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(r.id)}?autoplay=1&rel=0&modestbranding=1`
     : `https://w.soundcloud.com/player/?url=${encodeURIComponent(r.url)}&auto_play=true&visual=true`;
-  const def = r.source === 'SoundCloud' ? 'audio-mp3' : State.settings().dlFormat || 'video-best';
+  const def = r.source === 'SoundCloud' || r.kind === 'song' ? SONG_FMT() : State.settings().dlFormat || 'video-best';
   const body = html(`<div class="dv-preview" data-url="${esc(r.url)}">
     <div class="dv-frame ${yt ? '' : 'sc'}"><iframe src="${esc(embed)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe></div>
     <div class="dv-pv-info">
@@ -98,7 +139,7 @@ function fmtViews(n) {
 function discoverSearchBox({ query = '', big = false } = {}) {
   const src = State.prefs().discoverSource || 'youtube';
   const el = html(`<div class="dv-box ${big ? 'big' : ''}">
-    <div class="dv-input"><span data-icon="search" data-icon-size="20"></span><input placeholder="Search YouTube or SoundCloud for any song or video…" value="${esc(query)}" spellcheck="false" /><button class="btn-accent dv-go">Search</button></div>
+    <div class="dv-input"><span data-icon="search" data-icon-size="20"></span><input placeholder="Search for a song, artist or video…" value="${esc(query)}" spellcheck="false" /><button class="btn-accent dv-go">Search</button></div>
     <div class="dv-sources">
       <div class="seg"><button data-s="youtube" class="${src === 'youtube' ? 'on' : ''}">YouTube</button><button data-s="soundcloud" class="${src === 'soundcloud' ? 'on' : ''}">SoundCloud</button></div>
       <div class="dv-ideas"></div>
@@ -159,41 +200,80 @@ Views.discover = {
     State.setPref('discoverHistory', hist);
 
     const key = source + '|' + q.toLowerCase();
+    if (Discover.lastQ !== key) { Discover.tab = 'all'; Discover.lastQ = key; }
+    const card = (r) => {
+      const c = html(`<div class="dv-card" data-url="${esc(r.url)}">
+        <div class="dv-thumb ${r.source === 'SoundCloud' ? 'square' : ''}"><img src="${esc(r.thumbnail || genCover(r.id))}" loading="lazy" onerror="this.src='${genCover(r.id, '', 'video')}'" />
+          ${r.duration ? `<span class="mc-dur">${fmtTime(r.duration)}</span>` : ''}
+          <div class="dv-hover"><button class="dv-btn pv">${icon('play', 16)} Preview</button><button class="dv-btn dl">${icon('download', 16)} Download</button></div>
+          <div class="dv-bar"><div></div></div>
+        </div>
+        <div class="dv-c-title" title="${esc(r.title)}">${esc(r.title)}</div>
+        <div class="dv-c-sub">${esc(r.channel || r.source)}${r.views ? ` · ${fmtViews(r.views)} views` : ''}</div>
+        <span class="dv-state"></span>
+      </div>`);
+      $('.dv-thumb img', c).onclick = () => discoverPreview(r);
+      $('.dv-c-title', c).onclick = () => discoverPreview(r);
+      $('.pv', c).onclick = (e) => { e.stopPropagation(); discoverPreview(r); };
+      $('.dl', c).onclick = (e) => { e.stopPropagation(); fmtMenu(r, e.currentTarget); };
+      c.oncontextmenu = (e) => { e.preventDefault(); ctx(r, e); };
+      return c;
+    };
+    const fmtMenu = (r, btn) => {
+      const rect = btn.getBoundingClientRect();
+      UI.menu([{ header: 'Download as' }, ...dlFormats().map(([k, l]) => ({ label: l, action: () => discoverDownload(r, k) }))], rect.left, rect.bottom + 4, { minWidth: 200 });
+    };
+    const ctx = (r, e) => UI.menu([{ label: 'Preview', icon: 'play', action: () => discoverPreview(r) }, { label: `Download song (${native.platform === 'ios' ? '.m4a' : '.mp3'})`, icon: 'music', action: () => discoverDownload(r, SONG_FMT()) }, { label: 'Download video (.mp4)', icon: 'video', action: () => discoverDownload(r, 'video-best') }, { divider: true }, { label: `Open on ${r.source}`, icon: 'external', action: () => native.shell.openExternal(r.url) }], e.clientX, e.clientY);
+    // a song row: one tap downloads the song
+    const row = (r, i) => {
+      const el = html(`<div class="dv-card dv-song" data-url="${esc(r.url)}">
+        <span class="dv-n">${i + 1}</span>
+        <div class="dv-s-art"><img src="${esc(r.thumbnail || genCover(r.id))}" loading="lazy" onerror="this.src='${genCover(r.id, '', 'music')}'" /><button class="dv-s-play" title="Preview">${icon('play', 16)}</button></div>
+        <div class="dv-s-text"><b title="${esc(r.title)}">${esc(r.title)}</b><span>${esc((r.channel || '').replace(/ - Topic$/i, '') || r.source)}</span></div>
+        <span class="dv-state"></span>
+        <span class="dv-s-dur">${r.duration ? fmtTime(r.duration) : ''}</span>
+        <button class="btn-accent sm dv-s-dl">${icon('download', 14)} Song</button>
+        <button class="icon-btn small dv-s-more" title="More">${icon('dotsH', 18)}</button>
+        <div class="dv-bar"><div></div></div>
+      </div>`);
+      $('.dv-s-play', el).onclick = () => discoverPreview(r);
+      $('.dv-s-text b', el).onclick = () => discoverPreview(r);
+      $('.dv-s-dl', el).onclick = () => discoverDownload(r, SONG_FMT());
+      $('.dv-s-more', el).onclick = (e) => { const b = e.currentTarget.getBoundingClientRect(); ctx(r, { clientX: b.left, clientY: b.bottom }); };
+      el.oncontextmenu = (e) => { e.preventDefault(); ctx(r, e); };
+      return el;
+    };
     const draw = (list) => {
       results.innerHTML = '';
       if (!list.length) { results.appendChild(html(`<div class="dv-empty">${icon('search', 48)}<b>No results for "${esc(q)}"</b><span>Try different words or switch source.</span></div>`)); return; }
-      results.appendChild(html(`<div class="dv-count muted">${list.length} results from ${esc(list[0].source)}</div>`));
-      const grid = html('<div class="dv-grid"></div>');
-      for (const r of list) {
-        const card = html(`<div class="dv-card" data-url="${esc(r.url)}">
-          <div class="dv-thumb ${r.source === 'SoundCloud' ? 'square' : ''}"><img src="${esc(r.thumbnail || genCover(r.id))}" loading="lazy" onerror="this.src='${genCover(r.id, '', 'video')}'" />
-            ${r.duration ? `<span class="mc-dur">${fmtTime(r.duration)}</span>` : ''}
-            <div class="dv-hover"><button class="dv-btn pv">${icon('play', 16)} Preview</button><button class="dv-btn dl">${icon('download', 16)} Download</button></div>
-            <div class="dv-bar"><div></div></div>
-          </div>
-          <div class="dv-c-title" title="${esc(r.title)}">${esc(r.title)}</div>
-          <div class="dv-c-sub">${esc(r.channel || r.source)}${r.views ? ` · ${fmtViews(r.views)} views` : ''}</div>
-          <span class="dv-state"></span>
-        </div>`);
-        $('.dv-thumb img', card).onclick = () => discoverPreview(r);
-        $('.dv-c-title', card).onclick = () => discoverPreview(r);
-        $('.pv', card).onclick = (e) => { e.stopPropagation(); discoverPreview(r); };
-        $('.dl', card).onclick = (e) => {
-          e.stopPropagation();
-          const rect = e.currentTarget.getBoundingClientRect();
-          UI.menu([{ header: 'Download as' }, ...dlFormats().map(([k, l]) => ({ label: l, action: () => discoverDownload(r, k) }))], rect.left, rect.bottom + 4, { minWidth: 200 });
-        };
-        card.oncontextmenu = (e) => { e.preventDefault(); UI.menu([{ label: 'Preview', icon: 'play', action: () => discoverPreview(r) }, { label: 'Download as a video (.mp4)', icon: 'video', action: () => discoverDownload(r, 'video-best') }, { label: `Download as a song (${native.platform === 'ios' ? '.m4a' : '.mp3'})`, icon: 'music', action: () => discoverDownload(r, 'audio-mp3') }, { divider: true }, { label: `Open on ${r.source}`, icon: 'external', action: () => native.shell.openExternal(r.url) }], e.clientX, e.clientY); };
-        const j = Discover.jobsByUrl.get(r.url);
-        if (j) discoverCardState(card, j);
-        grid.appendChild(card);
+      const songs = list.filter((r) => r.kind === 'song'), vids = list.filter((r) => r.kind !== 'song');
+      const tab = Discover.tab || 'all';
+      if (songs.length && vids.length) {
+        const seg = html(`<div class="seg dv-tabs"><button data-t="all">All</button><button data-t="songs">Songs <small>${songs.length}</small></button><button data-t="videos">Videos <small>${vids.length}</small></button></div>`);
+        $$('button', seg).forEach((b) => { b.classList.toggle('on', b.dataset.t === tab); b.onclick = () => { Discover.tab = b.dataset.t; draw(list); }; });
+        results.appendChild(seg);
       }
-      results.appendChild(grid);
+      const add = (n) => { const j = Discover.jobsByUrl.get(n.dataset.url); if (j) discoverCardState(n, j); return n; };
+      if (songs.length && tab !== 'videos') {
+        results.appendChild(html(`<h2 class="dv-sec">${icon('music', 20)} Songs <span class="muted">official releases first</span></h2>`));
+        const box = html('<div class="dv-songs"></div>');
+        const show = tab === 'songs' ? songs : songs.slice(0, 6);
+        show.forEach((r, i) => box.appendChild(add(row(r, i))));
+        results.appendChild(box);
+        if (show.length < songs.length) { const m = html(`<button class="btn-outline sm dv-more-songs">See all ${songs.length} songs</button>`); m.onclick = () => { Discover.tab = 'songs'; draw(list); }; results.appendChild(m); }
+      }
+      if (vids.length && tab !== 'songs') {
+        if (songs.length) results.appendChild(html(`<h2 class="dv-sec">${icon('video', 20)} Videos</h2>`));
+        else results.appendChild(html(`<div class="dv-count muted">${list.length} results from ${esc(list[0].source)}</div>`));
+        const grid = html('<div class="dv-grid"></div>');
+        vids.forEach((r) => grid.appendChild(add(card(r))));
+        results.appendChild(grid);
+      }
     };
 
     if (Discover.cache.has(key)) return draw(Discover.cache.get(key));
     results.appendChild(html(`<div class="dv-grid loading">${Array.from({ length: 8 }, () => '<div class="dv-card skel"><div class="dv-thumb"></div><div class="sk1"></div><div class="sk2"></div></div>').join('')}</div>`));
-    native.dl.search(q, source, 24).then((list) => {
+    discoverSearch(q, source).then((list) => {
       Discover.cache.set(key, list);
       if (App.current.view === 'discover' && App.current.param === query) draw(list);
     }).catch((e) => {
