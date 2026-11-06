@@ -68,9 +68,11 @@ class Downloader extends EventEmitter {
     query = String(query || '').trim();
     if (!query) return [];
     if (!fs.existsSync(this.ytdlp)) await this.updateYtdlp();
-    const sc = source === 'soundcloud';
+    const sc = source === 'soundcloud', songs = source === 'songs';
     const n = Math.max(1, Math.min(sc ? 12 : 30, limit));
-    const args = ['-J', '--no-warnings', '--ignore-errors', ...(sc ? ['--skip-download'] : ['--flat-playlist']), `${sc ? 'scsearch' : 'ytsearch'}${n}:${query}`];
+    // 'songs' = YouTube Music's Songs results: the official audio releases, not music videos
+    const target = songs ? `https://music.youtube.com/search?q=${encodeURIComponent(query)}#songs` : `${sc ? 'scsearch' : 'ytsearch'}${n}:${query}`;
+    const args = ['-J', '--no-warnings', '--ignore-errors', ...(sc ? ['--skip-download'] : ['--flat-playlist']), ...(songs ? ['--playlist-end', String(n)] : []), target];
     const out = await new Promise((resolve, reject) => {
       execFile(this.ytdlp, args, { windowsHide: true, maxBuffer: 64 * 1024 * 1024, timeout: 90000, env: { ...process.env, PYTHONUTF8: '1' } }, (err, stdout, stderr) => {
         if (err && !stdout) return reject(new Error((String(stderr).match(/ERROR:.*$/m) || [err.message])[0].replace(/^ERROR:\s*/, '')));
@@ -81,15 +83,15 @@ class Downloader extends EventEmitter {
     try { data = JSON.parse(out); } catch { return []; }
     return (data.entries || []).filter(Boolean).map((e) => {
       const id = e.id;
-      const url = e.webpage_url || e.url || (sc ? null : `https://www.youtube.com/watch?v=${id}`);
+      const url = songs ? (id ? `https://www.youtube.com/watch?v=${id}` : null) : (e.webpage_url || e.url || (sc ? null : `https://www.youtube.com/watch?v=${id}`));
       const thumbs = (e.thumbnails || []).filter((t) => t && t.url);
       const thumb = sc
         ? (e.thumbnail || (thumbs.length ? thumbs[thumbs.length - 1].url : null))
         : `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
       return {
-        id, url, source: sc ? 'SoundCloud' : 'YouTube',
+        id, url, source: sc ? 'SoundCloud' : 'YouTube', kind: songs ? 'song' : undefined,
         title: e.title || e.track || 'Untitled',
-        channel: e.channel || e.uploader || e.artist || '',
+        channel: (Array.isArray(e.artists) && e.artists.join(', ')) || e.artist || e.channel || e.uploader || '',
         duration: Number(e.duration) || 0,
         views: Number(e.view_count) || 0,
         thumbnail: thumb,
