@@ -64,9 +64,34 @@ class Downloader extends EventEmitter {
 
   // ---------- online search (Discover) ----------
   // source: 'youtube' | 'soundcloud'. Returns lightweight results without downloading anything.
+  // YouTube Music's own Songs search: official releases with artist, album, length, plays and cover art
+  async ytmSongs(query, n) {
+    const res = await net.fetch('https://music.youtube.com/youtubei/v1/search?prettyPrint=false', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: 'https://music.youtube.com', Referer: 'https://music.youtube.com/', 'User-Agent': UA },
+      body: JSON.stringify({ context: { client: { clientName: 'WEB_REMIX', clientVersion: '1.20241106.01.00', hl: 'en', gl: 'US' } }, query, params: 'EgWKAQIIAWoMEA4QChADEAQQCRAF' }),
+    });
+    if (!res.ok) throw new Error('YouTube Music search failed (' + res.status + ')');
+    const data = await res.json();
+    const out = [];
+    const tabs = (((data.contents || {}).tabbedSearchResultsRenderer || {}).tabs) || [];
+    for (const tab of tabs) {
+      const secs = ((((tab.tabRenderer || {}).content || {}).sectionListRenderer || {}).contents) || [];
+      for (const sec of secs) for (const c of ((sec.musicShelfRenderer || {}).contents || [])) {
+        const r = ytmItem(c.musicResponsiveListItemRenderer || {});
+        if (r) out.push(r);
+        if (out.length >= n) return out;
+      }
+    }
+    return out;
+  }
+
   async search(query, source = 'youtube', limit = 18) {
     query = String(query || '').trim();
     if (!query) return [];
+    if (source === 'songs') {
+      try { const r = await this.ytmSongs(query, Math.max(1, Math.min(30, limit))); if (r.length) return r; } catch {}
+    }
     if (!fs.existsSync(this.ytdlp)) await this.updateYtdlp();
     const sc = source === 'soundcloud', songs = source === 'songs';
     const n = Math.max(1, Math.min(sc ? 12 : 30, limit));
@@ -437,8 +462,8 @@ class Downloader extends EventEmitter {
       id,
       path: file,
       title: (job.meta && job.meta.title) || info.track || info.title || path.basename(file),
-      artist: (job.meta && job.meta.artist) || info.artist || info.uploader || info.channel || 'Unknown artist',
-      album: info.album || (job.source === 'Spotify' ? 'Spotify downloads' : (info.extractor_key || 'Downloads')),
+      artist: (job.meta && job.meta.artist) || info.artist || String(info.uploader || info.channel || '').replace(/ - Topic$/, '') || 'Unknown artist',
+      album: (job.meta && job.meta.album) || info.album || (job.source === 'Spotify' ? 'Spotify downloads' : (info.extractor_key || 'Downloads')),
       duration: Number(info.duration) || 0,
       kind: isVideo ? 'video' : 'audio',
       source: job.source || info.extractor_key || 'web',
@@ -508,6 +533,35 @@ function pickImage(entity) {
   const srcs = (entity.coverArt && entity.coverArt.sources) || (entity.visualIdentity && entity.visualIdentity.image) || [];
   if (!srcs.length) return null;
   return [...srcs].sort((a, b) => (b.maxWidth || b.width || 0) - (a.maxWidth || a.width || 0))[0].url;
+}
+
+
+// one row of YouTube Music search results -> a search result
+function ytmItem(it) {
+  const cols = (it.flexColumns || []).map((c) => (((c.musicResponsiveListItemFlexColumnRenderer || {}).text || {}).runs) || []);
+  if (!cols.length || !cols[0].length) return null;
+  const vid = (it.playlistItemData || {}).videoId || ((cols[0][0].navigationEndpoint || {}).watchEndpoint || {}).videoId;
+  if (!vid) return null;
+  const title = cols[0].map((r) => r.text || '').join('');
+  const artists = [], plain = [];
+  let album = '', dur = 0, plays = 0;
+  for (const r of cols[1] || []) {
+    const t = (r.text || '').trim();
+    if (!t || ['•', '&', ','].includes(t)) continue;
+    const page = ((((r.navigationEndpoint || {}).browseEndpoint || {}).browseEndpointContextSupportedConfigs || {}).browseEndpointContextMusicConfig || {}).pageType || '';
+    if (page.endsWith('ARTIST')) artists.push(t);
+    else if (page.endsWith('ALBUM')) album = t;
+    else if (/^\d+(:\d{2}){1,2}$/.test(t)) dur = t.split(':').map(Number).reduce((a, b) => a * 60 + b, 0);
+    else if (!['Song', 'Video', 'E'].includes(t)) plain.push(t);
+  }
+  if (!artists.length && plain.length) artists.push(plain[0]);
+  for (const col of cols.slice(2)) {
+    const m = col.map((r) => r.text || '').join('').match(/^([\d.]+)\s*([KMB]?)\s+plays?/i);
+    if (m) plays = Math.round(parseFloat(m[1]) * ({ '': 1, K: 1e3, M: 1e6, B: 1e9 })[m[2].toUpperCase()]);
+  }
+  const th = ((((it.thumbnail || {}).musicThumbnailRenderer || {}).thumbnail || {}).thumbnails) || [];
+  const thumb = (th.length ? th[th.length - 1].url : `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`).replace(/=w\d+-h\d+/, '=w544-h544');
+  return { id: vid, url: `https://www.youtube.com/watch?v=${vid}`, source: 'YouTube', kind: 'song', title, channel: artists.join(', '), album, duration: dur, views: plays, thumbnail: thumb, square: true, live: false };
 }
 
 module.exports = { Downloader, FORMATS };
