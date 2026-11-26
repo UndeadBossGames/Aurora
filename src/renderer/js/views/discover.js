@@ -83,15 +83,28 @@ async function discoverOfficialSong(title, artist = '') {
   let list = [];
   try { list = await native.dl.search(`${artist ? artist + ' ' : ''}${clean}`, 'songs', 5); } catch { return null; }
   const whole = discoverNorm(`${artist} ${clean}`);
-  return list.find((x) => {
+  const matches = list.filter((x) => {
     const t = discoverNorm(x.title), a = discoverNorm(x.channel).slice(0, 8);
     return t.length > 1 && whole.includes(t) && (!a || whole.includes(a) || !artist && !/ - /.test(clean));
-  }) || null;
+  });
+  // the explicit (uncensored) version wins over the clean/radio edit
+  return matches.find((x) => x.explicit) || matches[0] || null;
 }
 // official songs carry their real title, artist, album and square cover into the library
 function discoverMeta(r) {
   if (!r || r.kind !== 'song' || !r.channel || / - Topic$/i.test(r.channel) && !r.album) return null;
-  return { title: r.title, artist: r.channel, album: r.album || undefined, cover: r.square ? r.thumbnail : undefined };
+  return { title: r.title, artist: r.channel, album: r.album || undefined, cover: r.square ? r.thumbnail : undefined, explicit: r.explicit || undefined };
+}
+// the same song twice (explicit + clean edit): the explicit one goes first
+function discoverExplicitFirst(list) {
+  const key = (r) => discoverNorm(r.title) + '|' + discoverNorm(r.channel).slice(0, 10);
+  const out = list.slice();
+  for (let i = 0; i < out.length; i++) {
+    if (out[i].explicit) continue;
+    const j = out.findIndex((x, k) => k > i && x.explicit && key(x) === key(out[i]));
+    if (j > i) { const [x] = out.splice(j, 1); out.splice(i, 0, x); }
+  }
+  return out;
 }
 // YouTube search with the official songs first; never fails just because one half failed
 async function discoverSearch(q, source) {
@@ -99,7 +112,7 @@ async function discoverSearch(q, source) {
   const [songs, vids] = await Promise.allSettled([native.dl.search(q, 'songs', 10), native.dl.search(q, 'youtube', 24)]);
   if (songs.status === 'rejected' && vids.status === 'rejected') throw vids.reason;
   const seen = new Set(), out = [];
-  for (const r of (songs.value || [])) if (r.id && !seen.has(r.id)) { seen.add(r.id); out.push({ ...r, kind: 'song' }); }
+  for (const r of discoverExplicitFirst(songs.value || [])) if (r.id && !seen.has(r.id)) { seen.add(r.id); out.push({ ...r, kind: 'song' }); }
   for (const r of (vids.value || [])) if (r.id && !seen.has(r.id)) { seen.add(r.id); out.push({ ...r, kind: discoverIsSong(r) ? 'song' : 'video' }); }
   return out;
 }
@@ -234,7 +247,7 @@ Views.discover = {
       const el = html(`<div class="dv-card dv-song" data-url="${esc(r.url)}">
         <span class="dv-n">${i + 1}</span>
         <div class="dv-s-art"><img src="${esc(r.thumbnail || genCover(r.id))}" loading="lazy" onerror="this.src='${genCover(r.id, '', 'music')}'" /><button class="dv-s-play" title="Preview">${icon('play', 16)}</button></div>
-        <div class="dv-s-text"><b title="${esc(r.title)}">${esc(r.title)}</b><span>${esc((r.channel || '').replace(/ - Topic$/i, '') || r.source)}</span></div>
+        <div class="dv-s-text"><b title="${esc(r.title)}">${esc(r.title)}</b><span>${r.explicit ? '<i class="explicit">E</i>' : ''}${esc((r.channel || '').replace(/ - Topic$/i, '') || r.source)}</span></div>
         <span class="dv-state"></span>
         <span class="dv-s-dur">${r.duration ? fmtTime(r.duration) : ''}</span>
         <button class="btn-accent sm dv-s-dl">${icon('download', 14)} Song</button>
