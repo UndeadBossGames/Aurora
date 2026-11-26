@@ -17,7 +17,10 @@ const ListenTogether = (() => {
     sync: { status: 'idle', drift: 0, note: '' }, // guest sync status
     pendingKey: null,
     seq: 0,
+    open: true,          // Jam: guests may play/pause/skip (host's switch)
+    addedBy: new Map(),  // host: track id -> who added it to the queue
   };
+  const pendingAdds = new Map(); // host: download job id -> who asked for the song
   let client = null, hostBeat = null, memberBeat = null, syncTimer = null, ignoreTrackEvent = 0;
   const listeners = [];
   const emit = () => listeners.forEach((f) => { try { f(S); } catch {} });
@@ -48,6 +51,7 @@ const ListenTogether = (() => {
     client.subscribe(T('/state'));
     client.subscribe(T('/members/+'));
     client.subscribe(T('/chat'));
+    if (S.role === 'host') client.subscribe(T('/req'));
     client.connect();
   }
 
@@ -68,6 +72,8 @@ const ListenTogether = (() => {
       const id = rest.slice(9);
       if (!payload) S.members.delete(id); else { try { S.members.set(id, JSON.parse(payload)); } catch {} }
       emit();
+    } else if (rest === '/req' && S.role === 'host') {
+      try { handleRequest(JSON.parse(payload)); } catch {}
     } else if (rest === '/chat') {
       try { const m = JSON.parse(payload); S.chat.push(m); S.chat = S.chat.slice(-60); emit(); } catch {}
     }
@@ -76,7 +82,7 @@ const ListenTogether = (() => {
   // ---------------- host ----------------
   function host() {
     if (S.role) leave();
-    S.role = 'host'; S.code = genCode(); S.members.clear(); S.chat = []; S.seq = 0;
+    S.role = 'host'; S.code = genCode(); S.members.clear(); S.chat = []; S.seq = 0; S.addedBy = new Map(); S.open = true;
     connect();
     hostBeat = setInterval(() => publishState(true), 3000);
     memberBeat = setInterval(announce, 30000);
@@ -100,10 +106,56 @@ const ListenTogether = (() => {
       track = lastTrackInfo.info;
     }
     const m = Player.media;
-    const st = { v: 1, host: profileBits(), track, playing: Player.playing, position: m.currentTime || 0, duration: (isFinite(m.duration) && m.duration) || (t && t.duration) || 0, seq: ++S.seq, sentAt: Date.now(), beat };
+    const queue = Player.upNext(15).map((x) => { const q = State.track(x.id); return q && { id: q.id, key: trackKey(q), title: q.title, artist: q.artist, cover: q.coverUrl && /^https:/.test(q.coverUrl) ? q.coverUrl : null, explicit: !!q.explicit, by: S.addedBy.get(q.id) || null, user: !!x.user }; }).filter(Boolean);
+    const st = { v: 2, host: profileBits(), track, playing: Player.playing, position: m.currentTime || 0, duration: (isFinite(m.duration) && m.duration) || (t && t.duration) || 0, seq: ++S.seq, sentAt: Date.now(), beat, queue, open: S.open, ctx: (Player.P.context && Player.P.context.name) || '', trackBy: t ? S.addedBy.get(t.id) || null : null };
     client.publish(T('/state'), JSON.stringify(st), { retain: true });
   }
   const publishSoon = debounce(() => publishState(false), 150);
+
+  // ---------------- Jam: guests add songs and (if allowed) control playback ----------------
+  async function handleRequest(req) {
+    if (!req || !req.by) return;
+    if (req.type === 'ctl') {
+      if (!S.open) return;
+      if (req.cmd === 'toggle') Player.toggle();
+      else if (req.cmd === 'next') Player.next();
+      else if (req.cmd === 'prev') Player.prev();
+      publishSoon();
+      return;
+    }
+    if (req.type !== 'add' || !req.track || !req.track.title) return;
+    const tr = req.track;
+    const local = findLocal({ url: tr.url, key: tr.key || trackKey(tr) });
+    if (local) return queueFor(local.id, req.by);
+    UI.toast(`${req.by.name || 'Someone'} added "${tr.title}". Getting it…`);
+    try {
+      let url = tr.url && /^https?:/.test(tr.url) ? tr.url : null, meta = { title: tr.title, artist: tr.artist, cover: tr.cover || undefined, explicit: tr.explicit || undefined };
+      if (!url && typeof discoverOfficialSong === 'function') { const off = await discoverOfficialSong(tr.title, tr.artist).catch(() => null); if (off) { url = off.url; meta = { ...meta, album: off.album, explicit: off.explicit || meta.explicit }; } }
+      const jobs = await native.dl.add({ url: url || `ytsearch1:${tr.artist ? tr.artist + ' - ' : ''}${tr.title} audio`, format: 'audio-mp3', dir: State.settings().downloadDir, playlist: false, addToLibrary: true, meta });
+      if (jobs[0]) pendingAdds.set(jobs[0].id, req.by);
+    } catch (e) { UI.toast(`Couldn't get "${tr.title}": ${String(e.message || e)}`); }
+  }
+  function queueFor(id, by) {
+    Player.addToQueue([id]);
+    S.addedBy.set(id, by);
+    const t = State.track(id);
+    if (t && by && by.name) UI.toast(`${by.name} added "${t.title}" to the Jam`);
+    publishSoon();
+    emit();
+  }
+  // a song for the Jam's queue (guest: sent to the host; host: straight into the queue)
+  function addSong(t) {
+    const info = { key: trackKey(t), title: t.title, artist: t.artist, url: t.url && /^https?:/.test(t.url) ? t.url : null, cover: t.coverUrl && /^https:/.test(t.coverUrl) ? t.coverUrl : (t.thumbnail || null), duration: t.duration || 0, explicit: !!t.explicit };
+    if (S.role === 'host') { if (t.id && State.track(t.id)) queueFor(t.id, profileBits()); else handleRequest({ type: 'add', track: info, by: profileBits() }); return; }
+    if (S.role !== 'guest' || !client) return;
+    client.publish(T('/req'), JSON.stringify({ type: 'add', track: info, by: profileBits(), at: Date.now() }));
+  }
+  function control(cmd) {
+    if (S.role === 'host') return handleRequest({ type: 'ctl', cmd, by: profileBits() });
+    if (S.role !== 'guest' || !client) return;
+    client.publish(T('/req'), JSON.stringify({ type: 'ctl', cmd, by: profileBits(), at: Date.now() }));
+  }
+  function setOpen(v) { S.open = !!v; publishSoon(); emit(); }
 
   // ---------------- guest ----------------
   function join(code) {
@@ -244,9 +296,11 @@ const ListenTogether = (() => {
     // host: share every change right away
     Player.on('track', () => { if (S.role === 'host') { publishSoon(); emit(); } else if (S.role === 'guest' && Date.now() - ignoreTrackEvent > 1500 && S.following && Player.current && S.hostState && S.hostState.track && trackKey(Player.current) !== S.hostState.track.key) { S.following = false; S.sync = { status: 'paused', note: 'You picked another song. Press Resync to follow the host again.' }; emit(); } });
     Player.on('state', () => { if (S.role === 'host') { publishSoon(); emit(); } });
+    Player.on('queue', () => { if (S.role === 'host') { publishSoon(); emit(); } });
     Player.media.addEventListener('seeked', () => { if (S.role === 'host') publishSoon(); });
     // guest: the song we were missing just finished downloading
-    native.dl.onFile(({ track }) => {
+    native.dl.onFile(({ jobId, track }) => {
+      if (S.role === 'host' && jobId && pendingAdds.has(jobId)) { const by = pendingAdds.get(jobId); pendingAdds.delete(jobId); setTimeout(() => { if (State.track(track.id)) queueFor(track.id, by); }, 200); return; }
       if (S.role !== 'guest' || !S.hostState || !S.hostState.track || !S.pendingKey) return;
       setTimeout(() => { if (State.track(track.id)) loadAndSync(track.id); }, 200);
     });
@@ -272,7 +326,7 @@ const ListenTogether = (() => {
   }
 
   return {
-    init, host, join, leave, say, resync, onChange, hostPosition, cleanCode, allowsFile,
+    init, host, join, leave, say, resync, onChange, hostPosition, cleanCode, allowsFile, addSong, control, setOpen,
     get state() { return S; }, get inSession() { return !!S.role; }, get hostCode() { return S.role === 'host' ? S.code : null; }, me,
   };
 })();
