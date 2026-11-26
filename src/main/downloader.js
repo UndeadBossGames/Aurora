@@ -324,6 +324,16 @@ class Downloader extends EventEmitter {
       this.emit('job', this.public(job));
       try { await this.updateYtdlp(); } catch (e) { return this.fail(job, 'yt-dlp is missing and could not be downloaded: ' + e.message); }
     }
+    // Spotify songs: the official release from YouTube Music, explicit version first
+    if (job.source === 'Spotify' && /^ytsearch1:/.test(job.url) && job.meta && job.meta.title && !job.resolved) {
+      job.resolved = true;
+      try {
+        const n = (x) => String(x || '').toLowerCase().replace(/\s*[([][^)\]]*[)\]]/g, '').replace(/[^a-z0-9]+/g, '');
+        const hits = (await this.ytmSongs(`${job.meta.artist || ''} ${job.meta.title}`, 6)).filter((h) => n(h.title).includes(n(job.meta.title)) || n(job.meta.title).includes(n(h.title)));
+        const pick = hits.find((h) => h.explicit && (!job.meta.artist || n(h.channel).includes(n(job.meta.artist).slice(0, 6)))) || hits.find((h) => !job.meta.artist || n(h.channel).includes(n(job.meta.artist).slice(0, 6)));
+        if (pick) { job.url = pick.url; job.meta = { ...job.meta, album: job.meta.album || pick.album, explicit: pick.explicit || undefined }; }
+      } catch {}
+    }
     const ff = this.hasFfmpeg();
     const args = [
       '--newline', '--no-mtime', '--windows-filenames', '--no-colors',
@@ -463,6 +473,7 @@ class Downloader extends EventEmitter {
       path: file,
       title: (job.meta && job.meta.title) || info.track || info.title || path.basename(file),
       artist: (job.meta && job.meta.artist) || info.artist || String(info.uploader || info.channel || '').replace(/ - Topic$/, '') || 'Unknown artist',
+      explicit: !!(job.meta && job.meta.explicit) || undefined,
       album: (job.meta && job.meta.album) || info.album || (job.source === 'Spotify' ? 'Spotify downloads' : (info.extractor_key || 'Downloads')),
       duration: Number(info.duration) || 0,
       kind: isVideo ? 'video' : 'audio',
@@ -561,7 +572,8 @@ function ytmItem(it) {
   }
   const th = ((((it.thumbnail || {}).musicThumbnailRenderer || {}).thumbnail || {}).thumbnails) || [];
   const thumb = (th.length ? th[th.length - 1].url : `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`).replace(/=w\d+-h\d+/, '=w544-h544');
-  return { id: vid, url: `https://www.youtube.com/watch?v=${vid}`, source: 'YouTube', kind: 'song', title, channel: artists.join(', '), album, duration: dur, views: plays, thumbnail: thumb, square: true, live: false };
+  const explicit = (it.badges || []).some((b) => (((b.musicInlineBadgeRenderer || {}).icon || {}).iconType || '') === 'MUSIC_EXPLICIT_BADGE');
+  return { id: vid, url: `https://www.youtube.com/watch?v=${vid}`, source: 'YouTube', kind: 'song', title, channel: artists.join(', '), album, duration: dur, views: plays, thumbnail: thumb, square: true, live: false, explicit };
 }
 
 module.exports = { Downloader, FORMATS };
