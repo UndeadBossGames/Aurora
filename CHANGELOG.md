@@ -2,6 +2,11 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.12.0
+- **Explicit labels:** songs marked explicit show an **E** next to the artist, in your library and in search.
+- **Explicit first:** when a song exists as both an explicit and a clean version, Aurora downloads the explicit one: in song search, when it swaps a music video for the official song, for Spotify links and for Identify.
+- **Jam-ready Listen Together:** sessions now share the host's queue, guests can add songs (everyone sees who added what), and the host can let guests play, pause and skip. Works together with Aurora for iPhone's new Jam screen.
+
 ## v1.11.0
 - **Real artists in song search:** the Songs results now come straight from YouTube Music's song search, with the artist, album, length, play count and square album art.
 - **Better saved songs:** a song downloaded from those results keeps its real title, artist, album and cover in your library.
