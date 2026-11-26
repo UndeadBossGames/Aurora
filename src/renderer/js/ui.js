@@ -222,7 +222,7 @@ const UI = (() => {
       const t = it.track;
       const row = html(`<div class="tl-row" data-id="${t.id}" tabindex="0">
         <div class="tl-num"><span class="n">${i + startIndex}</span><span class="eq"><i></i><i></i><i></i><i></i></span><button class="tl-play" data-icon="play" data-icon-size="14"></button></div>
-        <div class="tl-title">${coverHtml(coverSrc(t), 'tl-cover')}<div class="tl-text"><div class="tl-name">${esc(t.title)}${t.kind === 'video' ? '<span class="badge">VIDEO</span>' : ''}</div><div class="tl-artist">${t.source && t.source !== 'local' ? `<span class="src-badge" title="${esc(t.source)}">${esc(t.source[0])}</span>` : ''}<a class="artist-link">${esc(t.artist)}</a></div></div></div>
+        <div class="tl-title">${coverHtml(coverSrc(t), 'tl-cover')}<div class="tl-text"><div class="tl-name">${esc(t.title)}${t.kind === 'video' ? '<span class="badge">VIDEO</span>' : ''}</div><div class="tl-artist">${t.explicit ? '<span class="explicit" title="Explicit">E</span>' : ''}${t.source && t.source !== 'local' ? `<span class="src-badge" title="${esc(t.source)}">${esc(t.source[0])}</span>` : ''}<a class="artist-link">${esc(t.artist)}</a></div></div></div>
         ${showAlbum ? `<div class="tl-album">${esc(t.album || '')}</div>` : ''}
         ${showAdded ? `<div class="tl-added">${esc(fmtDate(it.addedAt))}</div>` : ''}
         <div class="tl-dur"><button class="tl-like ${State.isLiked(t.id) ? 'on' : ''}" title="Save to Favorites">${State.isLiked(t.id) ? icon('heartFilled', 16) : icon('heart', 16)}</button><span>${t.duration ? fmtTime(t.duration) : '–:––'}</span><button class="tl-more" data-icon="dotsH" data-icon-size="16" title="More options"></button></div>
