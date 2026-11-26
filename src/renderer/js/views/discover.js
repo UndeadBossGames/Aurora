@@ -49,13 +49,13 @@ function discoverPreviewState(pv, j) {
 async function discoverDownload(r, format) {
   discoverBind();
   try {
-    let url = r.url;
+    let url = r.url, src = r;
     // downloading a music video as a song? grab the official song instead (better sound, no intro/outro)
     if (/^audio/.test(format) && r.source === 'YouTube' && r.kind !== 'song' && !discoverIsSong(r)) {
       const off = await discoverOfficialSong(r.title);
-      if (off) { url = off.url; UI.toast(`Using the official song: ${off.title}${off.channel ? ' - ' + off.channel : ''}`); }
+      if (off) { url = off.url; src = off; UI.toast(`Using the official song: ${off.title}${off.channel ? ' - ' + off.channel : ''}`); }
     }
-    const jobs = await native.dl.add({ url, format, dir: State.settings().downloadDir, playlist: false, addToLibrary: State.settings().dlAddToLibrary !== false });
+    const jobs = await native.dl.add({ url, format, dir: State.settings().downloadDir, playlist: false, addToLibrary: State.settings().dlAddToLibrary !== false, meta: discoverMeta(src) });
     jobs.forEach((j) => { Discover.jobsByUrl.set(r.url, j); $$(`.dv-card[data-url="${CSS.escape(r.url)}"]`).forEach((c) => discoverCardState(c, j)); });
     UI.toast(`Downloading "${r.title}"`);
   } catch (e) {
@@ -87,6 +87,11 @@ async function discoverOfficialSong(title, artist = '') {
     const t = discoverNorm(x.title), a = discoverNorm(x.channel).slice(0, 8);
     return t.length > 1 && whole.includes(t) && (!a || whole.includes(a) || !artist && !/ - /.test(clean));
   }) || null;
+}
+// official songs carry their real title, artist, album and square cover into the library
+function discoverMeta(r) {
+  if (!r || r.kind !== 'song' || !r.channel || / - Topic$/i.test(r.channel) && !r.album) return null;
+  return { title: r.title, artist: r.channel, album: r.album || undefined, cover: r.square ? r.thumbnail : undefined };
 }
 // YouTube search with the official songs first; never fails just because one half failed
 async function discoverSearch(q, source) {
