@@ -2,6 +2,10 @@
 
 Every version is a git tag. To get an older build, download its installer from Releases.
 
+## v1.11.0
+- **Real artists in song search:** the Songs results now come straight from YouTube Music's song search, with the artist, album, length, play count and square album art.
+- **Better saved songs:** a song downloaded from those results keeps its real title, artist, album and cover in your library.
+
 ## v1.10.0
 - **Songs first:** YouTube searches now show the official songs (from YouTube Music) at the top in a Spotify-style list, with a one-tap **Song** download button. Music videos follow in their own Videos section, with All / Songs / Videos tabs.
 - **Official song, not the music video:** downloading a music video as a song now grabs the official release instead (no intros, skits or outros) when one matches. Identify downloads use the official song too.
